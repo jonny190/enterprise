@@ -43,3 +43,5 @@ next-env.d.ts
 
 # project tooling
 .superpowers/
+
+/src/generated/prisma

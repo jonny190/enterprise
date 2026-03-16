@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String
+  name                  String
+  emailVerified         Boolean   @default(false)
+  verificationToken     String?
+  verificationExpires   DateTime?
+  resetToken            String?
+  resetTokenExpires     DateTime?
+  pendingInvitationId   String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  memberships           OrgMembership[]
+  invitationsSent       OrgInvitation[] @relation("InvitedBy")
+  projectsCreated       Project[]       @relation("CreatedBy")
+  generatedOutputs      GeneratedOutput[]
+}
+
+enum OrgRole {
+  owner
+  admin
+  member
+}
+
+model Organization {
+  id        String          @id @default(uuid())
+  name      String
+  slug      String          @unique
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  memberships OrgMembership[]
+  invitations OrgInvitation[]
+  projects    Project[]
+}
+
+model OrgMembership {
+  id        String       @id @default(uuid())
+  userId    String
+  orgId     String
+  role      OrgRole
+  createdAt DateTime     @default(now())
+
+  user User         @relation(fields: [userId], references: [id])
+  org  Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+}
+
+model OrgInvitation {
+  id          String           @id @default(uuid())
+  token       String           @unique @default(uuid())
+  orgId       String
+  email       String
+  role        OrgRole
+  invitedById String
+  status      InvitationStatus @default(pending)
+  createdAt   DateTime         @default(now())
+  expiresAt   DateTime
+
+  org       Organization @relation(fields: [orgId], references: [id])
+  invitedBy User         @relation("InvitedBy", fields: [invitedById], references: [id])
+}
+
+enum ProjectStatus {
+  draft
+  active
+  archived
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  orgId       String
+  name        String
+  description String        @default("")
+  status      ProjectStatus @default(draft)
+  deletedAt   DateTime?
+  createdById String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  org         Organization @relation(fields: [orgId], references: [id])
+  createdBy   User         @relation("CreatedBy", fields: [createdById], references: [id])
+  meta        ProjectMeta?
+  objectives  Objective[]
+  userStories UserStory[]
+  requirementCategories RequirementCategory[]
+  wizardState ProjectWizardState?
+  generatedOutputs GeneratedOutput[]
+}
+
+model ProjectMeta {
+  id                   String  @id @default(uuid())
+  projectId            String  @unique
+  businessContext       String  @default("")
+  visionStatement      String  @default("")
+  targetUsers          String  @default("")
+  technicalConstraints String  @default("")
+  timeline             String  @default("")
+  stakeholders         String  @default("")
+  glossary             String  @default("")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Objective {
+  id              String  @id @default(uuid())
+  projectId       String
+  title           String
+  successCriteria String  @default("")
+  sortOrder       Int     @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum Priority {
+  must
+  should
+  could
+  wont
+}
+
+model UserStory {
+  id         String   @id @default(uuid())
+  projectId  String
+  role       String
+  capability String
+  benefit    String
+  priority   Priority @default(should)
+  sortOrder  Int      @default(0)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum RequirementType {
+  non_functional
+  constraint
+  assumption
+  dependency
+}
+
+model RequirementCategory {
+  id        String          @id @default(uuid())
+  projectId String
+  type      RequirementType
+  name      String
+  sortOrder Int             @default(0)
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+}
+
+model Requirement {
+  id          String   @id @default(uuid())
+  categoryId  String
+  title       String
+  description String   @default("")
+  priority    Priority @default(should)
+  sortOrder   Int      @default(0)
+
+  category RequirementCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  metrics  NFRMetric[]
+}
+
+model NFRMetric {
+  id            String @id @default(uuid())
+  requirementId String
+  metricName    String
+  targetValue   String
+  unit          String
+
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+}
+
+model ProjectWizardState {
+  id             String   @id @default(uuid())
+  projectId      String   @unique
+  currentStep    Int      @default(1)
+  completedSteps Json     @default("[]")
+  lastUpdatedAt  DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum OutputType {
+  ai_prompt
+  requirements_doc
+  project_brief
+  technical_spec
+}
+
+model GeneratedOutput {
+  id            String     @id @default(uuid())
+  projectId     String
+  outputType    OutputType
+  content       String
+  editedContent String?
+  generatedAt   DateTime   @default(now())
+  generatedById String
+
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  generatedBy User    @relation(fields: [generatedById], references: [id])
+}
