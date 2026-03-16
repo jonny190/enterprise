@@ -37,19 +37,54 @@ export async function registerUser(data: {
   const verificationToken = generateToken();
   const verificationExpires = generateTokenExpiry(24);
 
+  // If no email service configured, auto-verify the user
+  const emailConfigured = !!(process.env.AZURE_TENANT_ID && process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.env.AZURE_SENDER_EMAIL);
+
   await prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
       passwordHash,
       name: data.name,
-      verificationToken,
-      verificationExpires,
+      verificationToken: emailConfigured ? verificationToken : null,
+      verificationExpires: emailConfigured ? verificationExpires : null,
+      emailVerified: !emailConfigured,
       pendingInvitationId: invitationId,
     },
   });
 
-  await sendVerificationEmail(data.email.toLowerCase(), verificationToken);
-  return { success: true };
+  if (emailConfigured) {
+    await sendVerificationEmail(data.email.toLowerCase(), verificationToken);
+    return { success: true };
+  }
+
+  // Auto-accept invitation if auto-verified
+  if (invitationId) {
+    const user = await prisma.user.findUnique({
+      where: { email: data.email.toLowerCase() },
+    });
+    if (user) {
+      const invitation = await prisma.orgInvitation.findUnique({
+        where: { id: invitationId },
+      });
+      if (invitation && invitation.status === "pending") {
+        await prisma.$transaction([
+          prisma.orgMembership.create({
+            data: { userId: user.id, orgId: invitation.orgId, role: invitation.role },
+          }),
+          prisma.orgInvitation.update({
+            where: { id: invitation.id },
+            data: { status: "accepted" },
+          }),
+          prisma.user.update({
+            where: { id: user.id },
+            data: { pendingInvitationId: null },
+          }),
+        ]);
+      }
+    }
+  }
+
+  return { success: true, autoVerified: true };
 }
 
 export async function verifyEmail(token: string) {

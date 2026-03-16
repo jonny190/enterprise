@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { registerUser } from "@/actions/auth";
 
 export function RegisterForm() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const invitationToken = searchParams.get("invitation") || undefined;
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -31,6 +32,8 @@ export function RegisterForm() {
     if (result.error) {
       setError(result.error);
       setLoading(false);
+    } else if (result.autoVerified) {
+      router.push("/login");
     } else {
       setSuccess(true);
     }
