@@ -23,6 +23,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 # Copy full node_modules from deps stage for Prisma CLI migration support
 # Prisma v7 has deep transitive deps (valibot, @prisma/dev, etc.)
 COPY --from=deps /app/node_modules ./node_modules
