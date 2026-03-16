@@ -59,8 +59,9 @@ async function sendEmail(to: string, subject: string, htmlBody: string): Promise
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to send email: ${error}`);
+    const errorText = await response.text();
+    console.error(`Graph API sendMail failed (${response.status}):`, errorText);
+    throw new Error(`Failed to send email: ${response.status} ${errorText}`);
   }
 }
 
