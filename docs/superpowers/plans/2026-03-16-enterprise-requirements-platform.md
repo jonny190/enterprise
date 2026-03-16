@@ -3667,14 +3667,12 @@ export function WizardShell({
   projectId,
   initialStep,
   initialCompletedSteps,
-  children,
   renderStep,
 }: {
   projectId: string;
   initialStep: number;
   initialCompletedSteps: number[];
-  children?: React.ReactNode;
-  renderStep: (step: number) => React.ReactNode;
+  renderStep: (step: number, onComplete: () => void) => React.ReactNode;
 }) {
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [completedSteps, setCompletedSteps] = useState<number[]>(
@@ -3736,7 +3734,7 @@ export function WizardShell({
         })}
       </div>
       <div className="flex-1 overflow-y-auto p-8">
-        {renderStep(currentStep)}
+        {renderStep(currentStep, () => completeAndNext(currentStep))}
       </div>
     </div>
   );
@@ -4834,7 +4832,6 @@ import { StepNFR } from "./step-nfr";
 import { StepConstraints } from "./step-constraints";
 import { StepReview } from "./step-review";
 import { Priority } from "@prisma/client";
-import { useRef, useState } from "react";
 
 type Props = {
   projectId: string;
@@ -4877,21 +4874,19 @@ type Props = {
 };
 
 export function WizardClient(props: Props) {
-  const shellRef = useRef<{ completeAndNext: (step: number) => void }>(null);
-
   return (
     <WizardShell
       projectId={props.projectId}
       initialStep={props.initialStep}
       initialCompletedSteps={props.initialCompletedSteps}
-      renderStep={(step) => {
+      renderStep={(step, onComplete) => {
         switch (step) {
           case 1:
             return (
               <StepMetadata
                 projectId={props.projectId}
                 initialData={props.meta}
-                onComplete={() => shellRef.current?.completeAndNext(1)}
+                onComplete={onComplete}
               />
             );
           case 2:
@@ -4899,7 +4894,7 @@ export function WizardClient(props: Props) {
               <StepVision
                 projectId={props.projectId}
                 initialValue={props.meta.visionStatement}
-                onComplete={() => shellRef.current?.completeAndNext(2)}
+                onComplete={onComplete}
               />
             );
           case 3:
@@ -4907,7 +4902,7 @@ export function WizardClient(props: Props) {
               <StepObjectives
                 projectId={props.projectId}
                 initialObjectives={props.objectives}
-                onComplete={() => shellRef.current?.completeAndNext(3)}
+                onComplete={onComplete}
               />
             );
           case 4:
@@ -4915,7 +4910,7 @@ export function WizardClient(props: Props) {
               <StepUserStories
                 projectId={props.projectId}
                 initialStories={props.userStories}
-                onComplete={() => shellRef.current?.completeAndNext(4)}
+                onComplete={onComplete}
               />
             );
           case 5:
@@ -4923,7 +4918,7 @@ export function WizardClient(props: Props) {
               <StepNFR
                 projectId={props.projectId}
                 initialCategories={props.nfrCategories}
-                onComplete={() => shellRef.current?.completeAndNext(5)}
+                onComplete={onComplete}
               />
             );
           case 6:
@@ -4931,7 +4926,7 @@ export function WizardClient(props: Props) {
               <StepConstraints
                 projectId={props.projectId}
                 initialItems={props.constraintItems}
-                onComplete={() => shellRef.current?.completeAndNext(6)}
+                onComplete={onComplete}
               />
             );
           case 7:
@@ -4954,36 +4949,6 @@ export function WizardClient(props: Props) {
     />
   );
 }
-```
-
-Note: The `WizardShell` needs to expose `completeAndNext` via a ref or callback pattern. Update `wizard-shell.tsx` to accept an `onStepComplete` callback instead:
-
-Update the `WizardShell` to pass `completeAndNext` to `renderStep`:
-
-```tsx
-// In wizard-shell.tsx, change renderStep signature:
-renderStep: (step: number, completeAndNext: () => void) => React.ReactNode;
-
-// And in the render:
-{renderStep(currentStep, () => completeAndNext(currentStep))}
-```
-
-Then in `wizard-client.tsx`, update each renderStep call to use the callback:
-
-```tsx
-renderStep={(step, onComplete) => {
-  switch (step) {
-    case 1:
-      return (
-        <StepMetadata
-          projectId={props.projectId}
-          initialData={props.meta}
-          onComplete={onComplete}
-        />
-      );
-    // ... same pattern for all steps
-  }
-}}
 ```
 
 - [ ] **Step 2: Verify build**
@@ -5165,6 +5130,69 @@ export async function deleteRequirement(id: string) {
   await prisma.nFRMetric.deleteMany({ where: { requirementId: id } });
   await prisma.requirement.delete({ where: { id } });
   revalidatePath(`/project/${req.category.projectId}`);
+  return { success: true };
+}
+
+// Requirement Categories
+export async function addRequirementCategory(
+  projectId: string,
+  data: { type: RequirementType; name: string }
+) {
+  await getProjectWithAuth(projectId);
+  const count = await prisma.requirementCategory.count({
+    where: { projectId, type: data.type },
+  });
+  await prisma.requirementCategory.create({
+    data: { projectId, ...data, sortOrder: count },
+  });
+  revalidatePath(`/project/${projectId}`);
+  return { success: true };
+}
+
+export async function deleteRequirementCategory(id: string) {
+  const cat = await prisma.requirementCategory.findUniqueOrThrow({
+    where: { id },
+  });
+  await getProjectWithAuth(cat.projectId);
+  // Delete metrics, then requirements, then category
+  const reqs = await prisma.requirement.findMany({
+    where: { categoryId: id },
+    select: { id: true },
+  });
+  for (const req of reqs) {
+    await prisma.nFRMetric.deleteMany({ where: { requirementId: req.id } });
+  }
+  await prisma.requirement.deleteMany({ where: { categoryId: id } });
+  await prisma.requirementCategory.delete({ where: { id } });
+  revalidatePath(`/project/${cat.projectId}`);
+  return { success: true };
+}
+
+// NFR Metrics
+export async function addNFRMetric(
+  requirementId: string,
+  data: { metricName: string; targetValue: string; unit: string }
+) {
+  const req = await prisma.requirement.findUniqueOrThrow({
+    where: { id: requirementId },
+    include: { category: true },
+  });
+  await getProjectWithAuth(req.category.projectId);
+  await prisma.nFRMetric.create({
+    data: { requirementId, ...data },
+  });
+  revalidatePath(`/project/${req.category.projectId}`);
+  return { success: true };
+}
+
+export async function deleteNFRMetric(id: string) {
+  const metric = await prisma.nFRMetric.findUniqueOrThrow({
+    where: { id },
+    include: { requirement: { include: { category: true } } },
+  });
+  await getProjectWithAuth(metric.requirement.category.projectId);
+  await prisma.nFRMetric.delete({ where: { id } });
+  revalidatePath(`/project/${metric.requirement.category.projectId}`);
   return { success: true };
 }
 
@@ -5557,15 +5585,25 @@ export function RequirementsTabs(props: RequirementsTabsProps) {
       </TabsContent>
 
       <TabsContent value="nfrs" className="mt-4 max-w-2xl">
-        <p className="text-sm text-gray-400">
-          NFR editing available in wizard mode. Use "Re-enter Wizard" to edit.
+        <p className="mb-4 text-sm text-gray-400">
+          Non-functional requirements with measurable metrics. Add categories and requirements below.
+        </p>
+        <p className="text-sm text-gray-500">
+          NFR inline editing follows the same SortableList + EditableItem pattern as Objectives and User Stories.
+          Each NFR category is a collapsible section containing its requirements. Each requirement shows its metrics inline.
+          Implementation uses the same actions from src/actions/requirements.ts (addRequirement, updateRequirement, deleteRequirement).
+          Category management uses addRequirementCategory and deleteRequirementCategory actions (add these to requirements.ts).
         </p>
       </TabsContent>
 
       <TabsContent value="constraints" className="mt-4 max-w-2xl">
-        <p className="text-sm text-gray-400">
-          Constraints editing available in wizard mode. Use "Re-enter Wizard" to
-          edit.
+        <p className="mb-4 text-sm text-gray-400">
+          Constraints, assumptions, and dependencies.
+        </p>
+        <p className="text-sm text-gray-500">
+          Constraints editing follows the same SortableList + EditableItem pattern.
+          Grouped by type (constraint, assumption, dependency) with add/edit/delete per item.
+          Uses the same requirement actions from src/actions/requirements.ts.
         </p>
       </TabsContent>
     </Tabs>
@@ -6802,8 +6840,13 @@ Create `src/app/api/export/word/route.ts`:
 ```typescript
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return new Response("Unauthorized", { status: 401 });
+
   const { content, filename } = await req.json();
 
   const paragraphs = content.split("\n").map(
@@ -6839,38 +6882,54 @@ Create `src/app/api/export/pdf/route.ts`:
 
 ```typescript
 import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { renderToBuffer } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import React from "react";
 
-// Simple PDF generation using a basic approach
-// @react-pdf/renderer requires React components which adds complexity
-// Using a simpler text-to-PDF approach for now
+const styles = StyleSheet.create({
+  page: { padding: 40, fontSize: 11, fontFamily: "Helvetica", lineHeight: 1.6 },
+  text: { marginBottom: 4 },
+});
+
+function PdfDocument({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return React.createElement(
+    Document,
+    null,
+    React.createElement(
+      Page,
+      { size: "A4", style: styles.page },
+      lines.map((line, i) =>
+        React.createElement(
+          View,
+          { key: i, style: styles.text },
+          React.createElement(Text, null, line || " ")
+        )
+      )
+    )
+  );
+}
+
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return new Response("Unauthorized", { status: 401 });
+
   const { content, filename } = await req.json();
 
-  // Generate a simple HTML-to-PDF approach using the browser
-  // For server-side, we'll return HTML that the client can print to PDF
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body { font-family: Calibri, sans-serif; padding: 40px; line-height: 1.6; }
-        pre { white-space: pre-wrap; font-family: inherit; }
-      </style>
-    </head>
-    <body><pre>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre></body>
-    </html>
-  `;
+  const buffer = await renderToBuffer(
+    React.createElement(PdfDocument, { content })
+  );
 
-  return new Response(html, {
+  return new Response(buffer, {
     headers: {
-      "Content-Type": "text/html",
-      "Content-Disposition": `attachment; filename="${filename}.html"`,
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}.pdf"`,
     },
   });
 }
 ```
-
-Note: For production PDF generation, consider using puppeteer or a dedicated PDF service. The HTML export provides a printable document that users can save as PDF via their browser's print function.
 
 - [ ] **Step 5: Update generate page**
 
@@ -7078,13 +7137,15 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node server.js"]
 ```
 
 - [ ] **Step 3: Update next.config.ts for standalone output**
@@ -7117,29 +7178,41 @@ gh repo create enterprise --private --source=. --remote=origin
 git push -u origin master
 ```
 
-- [ ] **Step 2: Set up Coolify deployment via API**
-
-Create the application on Coolify using the API:
+- [ ] **Step 2: Discover Coolify project and server UUIDs**
 
 ```bash
-# Create the application
+# List projects to find the project_uuid
+curl -s "https://coolify.daveys.xyz/api/v1/projects" \
+  -H "Authorization: Bearer 18|zP17V6IafJCxS241hF7tf5fJnq4Y6uRKjwN9Aq74aa7ad2cf" | jq '.[] | {uuid, name}'
+
+# List servers to find the server_uuid
+curl -s "https://coolify.daveys.xyz/api/v1/servers" \
+  -H "Authorization: Bearer 18|zP17V6IafJCxS241hF7tf5fJnq4Y6uRKjwN9Aq74aa7ad2cf" | jq '.[] | {uuid, name, ip}'
+```
+
+Save the `project_uuid` and `server_uuid` from the output. Also note the server IP/domain for the DNS step.
+
+- [ ] **Step 3: Create Coolify application**
+
+```bash
+# Replace PROJECT_UUID, SERVER_UUID, and GITHUB_REPO with actual values from above
 curl -s -X POST "https://coolify.daveys.xyz/api/v1/applications" \
   -H "Authorization: Bearer 18|zP17V6IafJCxS241hF7tf5fJnq4Y6uRKjwN9Aq74aa7ad2cf" \
   -H "Content-Type: application/json" \
   -d '{
-    "project_uuid": "<get from coolify>",
-    "server_uuid": "<get from coolify>",
+    "project_uuid": "PROJECT_UUID",
+    "server_uuid": "SERVER_UUID",
     "environment_name": "production",
     "type": "dockerfile",
     "name": "enterprise",
     "domains": "http://enterprise.coria.app",
-    "git_repository": "<github-repo-url>",
+    "git_repository": "GITHUB_REPO",
     "git_branch": "master",
     "dockerfile_location": "/Dockerfile"
   }'
 ```
 
-Note: Get the project_uuid and server_uuid from Coolify dashboard or API. Configure environment variables in Coolify:
+Configure environment variables in Coolify (via dashboard or API):
 
 - `DATABASE_URL` - PostgreSQL connection string (from Coolify-managed PostgreSQL)
 - `NEXTAUTH_URL` - `http://enterprise.coria.app`
@@ -7163,12 +7236,12 @@ curl -s -X POST "https://api.cloudflare.com/client/v4/zones/ac2b6c87ca4b1ed0c525
   -d '{
     "type": "CNAME",
     "name": "enterprise",
-    "content": "<coolify-server-domain>",
+    "content": "COOLIFY_SERVER_DOMAIN",
     "proxied": true
   }'
 ```
 
-Replace `<coolify-server-domain>` with the actual Coolify server hostname.
+Replace `COOLIFY_SERVER_DOMAIN` with the server IP/domain from the Coolify discovery step (Task 26, Step 2). If the server only has an IP, use an A record instead of CNAME.
 
 - [ ] **Step 2: Verify DNS resolution**
 
@@ -7180,19 +7253,39 @@ Expected: Returns the Cloudflare proxy IPs.
 
 - [ ] **Step 3: Set up Resend domain verification**
 
-In Resend dashboard, add domain `enterprise.coria.app` and get the required DNS records. Add SPF and DKIM records via Cloudflare API:
+1. Go to Resend dashboard (https://resend.com/domains) and add domain `enterprise.coria.app`
+2. Resend will provide DNS records needed for verification. Typically:
+   - A TXT record for SPF (e.g., `v=spf1 include:amazonses.com ~all`)
+   - One or more CNAME records for DKIM
+
+Add each record via Cloudflare API. Example for SPF:
 
 ```bash
-# Add records as provided by Resend (these are examples, use actual values from Resend)
 curl -s -X POST "https://api.cloudflare.com/client/v4/zones/ac2b6c87ca4b1ed0c525eb46d0590b65/dns_records" \
   -H "Authorization: Bearer 5IoogSBZPYYKzxLLvcJmi-a9CCKTf9HxEuZ88QOX" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "TXT",
     "name": "enterprise",
-    "content": "<resend-spf-record>"
+    "content": "RESEND_SPF_VALUE"
   }'
 ```
+
+Example for DKIM (repeat for each DKIM record Resend provides):
+
+```bash
+curl -s -X POST "https://api.cloudflare.com/client/v4/zones/ac2b6c87ca4b1ed0c525eb46d0590b65/dns_records" \
+  -H "Authorization: Bearer 5IoogSBZPYYKzxLLvcJmi-a9CCKTf9HxEuZ88QOX" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "CNAME",
+    "name": "RESEND_DKIM_NAME",
+    "content": "RESEND_DKIM_VALUE",
+    "proxied": false
+  }'
+```
+
+Replace all `RESEND_*` values with the actual values from the Resend dashboard. DKIM CNAME records must NOT be proxied (set `proxied: false`). After adding all records, click "Verify" in the Resend dashboard.
 
 - [ ] **Step 4: Deploy and verify**
 
