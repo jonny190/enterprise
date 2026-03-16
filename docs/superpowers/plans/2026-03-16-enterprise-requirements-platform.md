@@ -189,7 +189,21 @@ Copy to `.env.local`:
 cp .env.example .env.local
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Verify .gitignore includes .env.local**
+
+`create-next-app` should create a `.gitignore` that includes `.env.local`. Verify this:
+
+```bash
+grep "env.local" .gitignore
+```
+
+Expected: `.env*.local` or `.env.local` appears in output. If not, add it:
+
+```bash
+echo ".env.local" >> .gitignore
+```
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -224,18 +238,23 @@ datasource db {
 }
 
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  passwordHash   String
-  name           String
-  emailVerified  Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String
+  name                  String
+  emailVerified         Boolean   @default(false)
+  verificationToken     String?
+  verificationExpires   DateTime?
+  resetToken            String?
+  resetTokenExpires     DateTime?
+  pendingInvitationId   String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
-  memberships    OrgMembership[]
-  invitationsSent OrgInvitation[] @relation("InvitedBy")
-  projectsCreated Project[]      @relation("CreatedBy")
-  generatedOutputs GeneratedOutput[]
+  memberships           OrgMembership[]
+  invitationsSent       OrgInvitation[] @relation("InvitedBy")
+  projectsCreated       Project[]       @relation("CreatedBy")
+  generatedOutputs      GeneratedOutput[]
 }
 
 enum OrgRole {
@@ -277,6 +296,7 @@ enum InvitationStatus {
 
 model OrgInvitation {
   id          String           @id @default(uuid())
+  token       String           @unique @default(uuid())
   orgId       String
   email       String
   role        OrgRole
@@ -288,7 +308,9 @@ model OrgInvitation {
   org       Organization @relation(fields: [orgId], references: [id])
   invitedBy User         @relation("InvitedBy", fields: [invitedById], references: [id])
 
-  @@unique([orgId, email])
+  // Note: Prisma doesn't support partial unique indexes.
+  // The unique(orgId, email) where status=pending constraint is enforced
+  // at the application level in the inviteMember action.
 }
 
 enum ProjectStatus {
@@ -329,7 +351,7 @@ model ProjectMeta {
   stakeholders         String  @default("")
   glossary             String  @default("")
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model Objective {
@@ -339,7 +361,7 @@ model Objective {
   successCriteria String  @default("")
   sortOrder       Int     @default(0)
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 enum Priority {
@@ -358,7 +380,7 @@ model UserStory {
   priority   Priority @default(should)
   sortOrder  Int      @default(0)
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 enum RequirementType {
@@ -375,7 +397,7 @@ model RequirementCategory {
   name      String
   sortOrder Int             @default(0)
 
-  project      Project       @relation(fields: [projectId], references: [id])
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   requirements Requirement[]
 }
 
@@ -387,7 +409,7 @@ model Requirement {
   priority    Priority @default(should)
   sortOrder   Int      @default(0)
 
-  category RequirementCategory @relation(fields: [categoryId], references: [id])
+  category RequirementCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   metrics  NFRMetric[]
 }
 
@@ -398,7 +420,7 @@ model NFRMetric {
   targetValue   String
   unit          String
 
-  requirement Requirement @relation(fields: [requirementId], references: [id])
+  requirement Requirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
 }
 
 model ProjectWizardState {
@@ -408,7 +430,7 @@ model ProjectWizardState {
   completedSteps Json     @default("[]")
   lastUpdatedAt  DateTime @updatedAt
 
-  project Project @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 enum OutputType {
@@ -427,7 +449,7 @@ model GeneratedOutput {
   generatedAt   DateTime   @default(now())
   generatedById String
 
-  project     Project @relation(fields: [projectId], references: [id])
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   generatedBy User    @relation(fields: [generatedById], references: [id])
 }
 ```
@@ -800,38 +822,9 @@ git commit -m "feat: add Resend email service with verification and invitation t
 **Files:**
 - Create: `src/actions/auth.ts`
 
-- [ ] **Step 1: Add verification token fields to User model**
+- [ ] **Step 1: Create auth server actions**
 
-Add to `prisma/schema.prisma` User model:
-
-```prisma
-model User {
-  id                    String    @id @default(uuid())
-  email                 String    @unique
-  passwordHash          String
-  name                  String
-  emailVerified         Boolean   @default(false)
-  verificationToken     String?
-  verificationExpires   DateTime?
-  resetToken            String?
-  resetTokenExpires     DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  memberships           OrgMembership[]
-  invitationsSent       OrgInvitation[] @relation("InvitedBy")
-  projectsCreated       Project[]       @relation("CreatedBy")
-  generatedOutputs      GeneratedOutput[]
-}
-```
-
-Run migration:
-
-```bash
-npx prisma migrate dev --name add-user-tokens
-```
-
-- [ ] **Step 2: Create auth server actions**
+Note: User model already includes verificationToken, verificationExpires, resetToken, resetTokenExpires, and pendingInvitationId fields from the initial schema (Task 2).
 
 Create `src/actions/auth.ts`:
 
@@ -958,7 +951,7 @@ export async function resetPassword(token: string, newPassword: string) {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 2: Commit**
 
 ```bash
 git add -A
@@ -1784,18 +1777,18 @@ export async function inviteMember(
     data.email,
     org.name,
     inviter.name,
-    invitation.id
+    invitation.token
   );
 
   revalidatePath(`/org/${org.slug}/members`);
   return { success: true };
 }
 
-export async function acceptInvitation(invitationId: string) {
+export async function acceptInvitation(token: string) {
   const user = await requireSession();
 
   const invitation = await prisma.orgInvitation.findUnique({
-    where: { id: invitationId },
+    where: { token },
   });
 
   if (!invitation || invitation.status !== "pending") {
@@ -1804,7 +1797,7 @@ export async function acceptInvitation(invitationId: string) {
 
   if (invitation.expiresAt < new Date()) {
     await prisma.orgInvitation.update({
-      where: { id: invitationId },
+      where: { token },
       data: { status: "expired" },
     });
     return { error: "This invitation has expired" };
@@ -1936,21 +1929,9 @@ git commit -m "feat: add organization and invitation server actions"
 
 - [ ] **Step 1: Update registerUser to handle invitation token**
 
-In `src/actions/auth.ts`, update the `registerUser` function to store the invitation token in the user record, and update `verifyEmail` to accept the invitation after verification:
+In `src/actions/auth.ts`, update the `registerUser` function to store the invitation token in the user record, and update `verifyEmail` to accept the invitation after verification.
 
-Add to User model in `prisma/schema.prisma`:
-
-```prisma
-  pendingInvitationId   String?
-```
-
-Run migration:
-
-```bash
-npx prisma migrate dev --name add-pending-invitation
-```
-
-Update `registerUser` in `src/actions/auth.ts` - add at the end of the create data:
+Note: `pendingInvitationId` is already on the User model from the initial schema (Task 2). Update the `registerUser` function:
 
 ```typescript
 export async function registerUser(data: {
@@ -1975,7 +1956,7 @@ export async function registerUser(data: {
   let invitationId: string | undefined;
   if (data.invitationToken) {
     const invitation = await prisma.orgInvitation.findUnique({
-      where: { id: data.invitationToken },
+      where: { token: data.invitationToken },
     });
     if (
       invitation &&
