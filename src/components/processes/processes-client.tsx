@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { type FlowType } from "@prisma/client";
 import { type Node, type Edge } from "@xyflow/react";
 import { FlowList } from "./flow-list";
 import { FlowCanvasWithProvider } from "./flow-canvas";
+import { GenerateFlowButton } from "./generate-flow-dialog";
+import { updateDiagramData } from "@/actions/processes";
 
 type ProcessFlow = {
   id: string;
@@ -20,11 +23,21 @@ type ProcessesClientProps = {
 };
 
 export function ProcessesClient({ projectId, flows }: ProcessesClientProps) {
+  const router = useRouter();
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(
     flows[0]?.id ?? null
   );
 
   const selectedFlow = flows.find((f) => f.id === selectedFlowId);
+
+  const handleFlowGenerated = async (diagramData: {
+    nodes: unknown[];
+    edges: unknown[];
+  }) => {
+    if (!selectedFlowId) return;
+    await updateDiagramData(selectedFlowId, projectId, diagramData);
+    router.refresh();
+  };
 
   return (
     <div className="flex h-[calc(100vh-120px)]">
@@ -38,13 +51,24 @@ export function ProcessesClient({ projectId, flows }: ProcessesClientProps) {
       </div>
       <div className="flex-1">
         {selectedFlow ? (
-          <FlowCanvasWithProvider
-            key={selectedFlow.id}
-            flowId={selectedFlow.id}
-            projectId={projectId}
-            initialNodes={selectedFlow.diagramData.nodes ?? []}
-            initialEdges={selectedFlow.diagramData.edges ?? []}
-          />
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between border-b p-2">
+              <span className="text-sm font-medium">{selectedFlow.name}</span>
+              <GenerateFlowButton
+                projectId={projectId}
+                onGenerated={handleFlowGenerated}
+              />
+            </div>
+            <div className="flex-1">
+              <FlowCanvasWithProvider
+                key={selectedFlow.id}
+                flowId={selectedFlow.id}
+                projectId={projectId}
+                initialNodes={selectedFlow.diagramData.nodes ?? []}
+                initialEdges={selectedFlow.diagramData.edges ?? []}
+              />
+            </div>
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center text-gray-400">
             Select or create a process flow to get started.

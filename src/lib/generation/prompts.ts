@@ -94,6 +94,14 @@ export function buildUserPrompt(projectData: {
     name: string;
     requirements: { title: string; description: string }[];
   }[];
+  processFlows?: {
+    name: string;
+    flowType: string;
+    diagramData: {
+      nodes: { id: string; type: string; data: { label: string } }[];
+      edges: { source: string; target: string; label?: string }[];
+    };
+  }[];
 }): string {
   let prompt = `# Project: ${projectData.name}\n\n`;
 
@@ -185,5 +193,59 @@ export function buildUserPrompt(projectData: {
     prompt += `## Glossary\n${meta.glossary}\n\n`;
   }
 
+  if (projectData.processFlows && projectData.processFlows.length > 0) {
+    prompt += `\n## Business Process Flows\n\n`;
+    projectData.processFlows.forEach((flow) => {
+      prompt += `### ${flow.name} (${flow.flowType === "as_is" ? "Current State" : "Future State"})\n`;
+      const nodeMap = new Map(flow.diagramData.nodes.map((n) => [n.id, n.data.label]));
+      flow.diagramData.edges.forEach((edge) => {
+        const from = nodeMap.get(edge.source) ?? edge.source;
+        const to = nodeMap.get(edge.target) ?? edge.target;
+        prompt += `- ${from} -> ${to}${edge.label ? ` [${edge.label}]` : ""}\n`;
+      });
+      prompt += "\n";
+    });
+  }
+
+  return prompt;
+}
+
+export function buildFlowGenerationPrompt(projectData: {
+  name: string;
+  description: string;
+  meta: {
+    visionStatement: string;
+    businessContext: string;
+    targetUsers: string;
+  };
+  objectives: { title: string; successCriteria: string }[];
+  userStories: { role: string; capability: string; benefit: string }[];
+}) {
+  let prompt = `Based on the following project context, generate a business process flowchart.\n\n`;
+  prompt += `## Project: ${projectData.name}\n${projectData.description}\n\n`;
+  if (projectData.meta.visionStatement)
+    prompt += `## Vision\n${projectData.meta.visionStatement}\n\n`;
+  if (projectData.meta.businessContext)
+    prompt += `## Business Context\n${projectData.meta.businessContext}\n\n`;
+  if (projectData.objectives.length > 0) {
+    prompt += `## Objectives\n`;
+    projectData.objectives.forEach((o) => {
+      prompt += `- ${o.title}${o.successCriteria ? ` (Success: ${o.successCriteria})` : ""}\n`;
+    });
+    prompt += "\n";
+  }
+  if (projectData.userStories.length > 0) {
+    prompt += `## User Stories\n`;
+    projectData.userStories.forEach((s) => {
+      prompt += `- As a ${s.role}, I want ${s.capability}, so that ${s.benefit}\n`;
+    });
+    prompt += "\n";
+  }
+  prompt += `Return a JSON object with "nodes" and "edges" arrays for a flowchart.\n`;
+  prompt += `Each node: { "id": "string", "type": "process"|"decision"|"start_end"|"subprocess", "data": { "label": "string" } }\n`;
+  prompt += `Each edge: { "id": "string", "source": "node_id", "target": "node_id", "label": "optional string for decision branches" }\n`;
+  prompt += `Use "start_end" type for the Start and End nodes. Use "decision" for yes/no branches. Use "process" for action steps.\n`;
+  prompt += `Do not include position data -- positions will be auto-calculated.\n`;
+  prompt += `Return ONLY the JSON object, no markdown fences or other text.`;
   return prompt;
 }

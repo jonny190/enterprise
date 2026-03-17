@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { buildSystemPrompt, buildUserPrompt } from "./prompts";
+import { TextBlock } from "@anthropic-ai/sdk/resources/messages";
 
 const client = new Anthropic();
 
@@ -36,4 +37,19 @@ export async function generateOutput(
       }
     },
   });
+}
+
+export async function generateStructuredJSON(prompt: string): Promise<string> {
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 4096,
+    system:
+      "You are a business process analyst. Return only valid JSON with no markdown fences or additional text.",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const textBlock = response.content.find(
+    (c): c is TextBlock => c.type === "text"
+  );
+  return textBlock?.text ?? "{}";
 }

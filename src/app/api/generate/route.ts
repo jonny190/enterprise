@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         },
         orderBy: { sortOrder: "asc" },
       },
+      processFlows: { orderBy: { sortOrder: "asc" } },
     },
   });
 
@@ -76,6 +77,14 @@ export async function POST(req: NextRequest) {
             description: r.description,
           })),
         })),
+      processFlows: project.processFlows.map((f) => ({
+        name: f.name,
+        flowType: f.flowType,
+        diagramData: f.diagramData as {
+          nodes: { id: string; type: string; data: { label: string } }[];
+          edges: { source: string; target: string; label?: string }[];
+        },
+      })),
     });
 
     return new Response(stream, {
