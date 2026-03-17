@@ -36,6 +36,7 @@ enum TargetType {
   user_story
   requirement
   requirement_category
+  nfr_metric
   process_flow
   project_meta
 }
@@ -73,9 +74,13 @@ model RevisionChange {
   targetType TargetType
   targetId   String?
   data       Json       @default("{}")
-  sortOrder  Int        @default(0)
+  sortOrder  Int        @default(autoincrement())
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
   revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@index([revisionId])
 }
 ```
 
@@ -83,17 +88,20 @@ The `Project` model gains a `revisions Revision[]` relation. The `User` model ga
 
 ### How change data is structured
 
-**Added items** -- `targetId` is null, `data` contains the full item:
-- Objective: `{ title, successCriteria }`
-- UserStory: `{ role, capability, benefit, priority }`
-- Requirement: `{ categoryId, title, description, priority }` (categoryId may reference an existing category or a new one from another `added` change)
-- RequirementCategory: `{ type, name }`
-- ProcessFlow: `{ name, flowType, diagramData }`
-- ProjectMeta: `{ field, value }` where field is one of the meta fields (visionStatement, businessContext, etc.)
+**Added items** -- `targetId` is null, `data` contains the full item with a synthetic `id` (UUID generated at creation time, used for cross-referencing within the same revision):
+- Objective: `{ id, title, successCriteria }`
+- UserStory: `{ id, role, capability, benefit, priority }`
+- RequirementCategory: `{ id, type, name }`
+- Requirement: `{ id, categoryId, title, description, priority }` -- `categoryId` may reference an existing category ID or the synthetic `id` from another `added` category change in the same or prior revision
+- NFRMetric: `{ id, requirementId, metricName, targetValue, unit }` -- `requirementId` may reference an existing requirement or a synthetic ID from an `added` requirement change
+- ProcessFlow: `{ id, name, flowType, diagramData }`
+- ProjectMeta: N/A for added (ProjectMeta is a singleton, always use `modified`)
 
-**Modified items** -- `targetId` references the existing item, `data` contains only the changed fields (same shape as added, but partial).
+**Modified items** -- `targetId` references the existing item, `data` contains only the changed fields (same shape as added, but partial). For requirements that include metric changes, include a `metrics` array in the data with the full updated set of metrics for that requirement.
 
 **Removed items** -- `targetId` references the existing item, `data` is empty `{}`.
+
+**ProjectMeta changes** -- `targetType: project_meta`, `targetId` is the ProjectMeta record ID. `data` contains one or more field/value pairs: `{ visionStatement: "new value", businessContext: "new value" }`. Multiple fields can be changed in a single change record since ProjectMeta is a singleton.
 
 ## Revision Management UI
 
@@ -153,16 +161,19 @@ A server-side utility at `src/lib/revisions.ts` that computes project state at a
 ```typescript
 function resolveProjectState(
   projectId: string,
-  revisionNumber?: number | null
+  revisionNumber?: number | null,
+  includeDraftId?: string | null
 ): Promise<ResolvedProjectState>
 ```
 
+The optional `includeDraftId` parameter allows the revision editor to include a draft revision's changes on top of the finalized chain. This is used only by the editor UI -- AI generation and exports always use finalized revisions only.
+
 ### Algorithm
 
-1. Fetch baseline project data (objectives, stories, requirements with categories, flows, meta)
-2. If `revisionNumber` is null, return baseline as-is
-3. Fetch all finalized revisions up to `revisionNumber`, ordered by revision number
-4. For each revision, apply changes sequentially:
+1. Fetch baseline project data (objectives, stories, requirements with categories and metrics, flows, meta)
+2. If `revisionNumber` is null and `includeDraftId` is null, return baseline as-is
+3. Fetch all finalized revisions up to `revisionNumber`, ordered by revision number. If `includeDraftId` is provided, also fetch that draft revision and append it to the list
+4. For each revision, apply changes sequentially (ordered by `sortOrder` within each revision):
    - `added`: insert new item with a generated ID into the collection
    - `modified`: merge updated fields into the matching item (by targetId)
    - `removed`: remove item from the collection
@@ -184,7 +195,7 @@ The resolved state mirrors the baseline data structure but each item carries opt
 
 Existing 4 output types work unchanged but receive resolved state instead of baseline.
 
-New output type `revision_changelog`:
+New output type `revision_changelog` (add to the `OutputType` Prisma enum):
 - Generates a document describing only changes in a specific revision
 - Lists added, modified, removed items with context from the baseline
 - Useful for handing to a development team already familiar with the project
@@ -215,7 +226,7 @@ New output type `revision_changelog`:
 
 | File | Change |
 |------|--------|
-| `prisma/schema.prisma` | Add Revision, RevisionChange models, enums, relations on Project and User |
+| `prisma/schema.prisma` | Add Revision, RevisionChange models, enums, relations on Project and User, add `revision_changelog` to OutputType enum |
 | `src/components/layout/project-tabs.tsx` | Add "Revisions" tab |
 | `src/app/(dashboard)/project/[id]/generate/page.tsx` | Add revision selector dropdown |
 | `src/lib/generation/prompts.ts` | Add `buildChangelogPrompt`, add `revision_changelog` system prompt |
