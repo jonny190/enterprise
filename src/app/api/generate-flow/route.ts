@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { buildFlowGenerationPrompt } from "@/lib/generation/prompts";
 import { generateStructuredJSON } from "@/lib/generation/generate";
-import dagre from "dagre";
+import * as dagre from "dagre";
 
 function layoutNodes(
   nodes: { id: string; type: string; data: { label: string } }[],
@@ -112,7 +112,8 @@ export async function POST(request: Request) {
     );
     const laidOutNodes = layoutNodes(nodes, edges);
     return NextResponse.json({ nodes: laidOutNodes, edges });
-  } catch {
+  } catch (error) {
+    console.error("Failed to generate flow:", error);
     return NextResponse.json(
       { error: "Failed to generate flow" },
       { status: 500 }

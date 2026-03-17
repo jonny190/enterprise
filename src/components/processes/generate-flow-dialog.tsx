@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type GenerateFlowButtonProps = {
   projectId: string;
@@ -26,7 +27,13 @@ export function GenerateFlowButton({
       const data = await res.json();
       if (data.nodes && data.edges) {
         onGenerated(data);
+        toast.success("Flow generated successfully");
+      } else {
+        toast.error(data.error || "Failed to generate flow");
       }
+    } catch (error) {
+      console.error("Generate flow error:", error);
+      toast.error("Failed to generate flow");
     } finally {
       setLoading(false);
     }
