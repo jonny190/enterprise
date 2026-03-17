@@ -8,7 +8,8 @@ import { StepUserStories } from "./step-user-stories";
 import { StepNFR } from "./step-nfr";
 import { StepConstraints } from "./step-constraints";
 import { StepReview } from "./step-review";
-import { Priority } from "@prisma/client";
+import { StepProcessFlows } from "./step-process-flows";
+import { Priority, FlowType } from "@prisma/client";
 
 type Props = {
   projectId: string;
@@ -47,6 +48,12 @@ type Props = {
       description: string;
       priority: Priority;
     }[];
+  }[];
+  processFlows: {
+    name: string;
+    flowType: FlowType;
+    diagramData: unknown;
+    sortOrder: number;
   }[];
 };
 
@@ -107,6 +114,20 @@ export function WizardClient(props: Props) {
               />
             );
           case 7:
+            return (
+              <StepProcessFlows
+                projectId={props.projectId}
+                initialFlows={
+                  props.processFlows?.map((f) => ({
+                    name: f.name,
+                    flowType: f.flowType,
+                    diagramData: (f.diagramData as { nodes: unknown[]; edges: unknown[] }) ?? { nodes: [], edges: [] },
+                  })) ?? []
+                }
+                onComplete={onComplete}
+              />
+            );
+          case 8:
             return (
               <StepReview
                 projectId={props.projectId}

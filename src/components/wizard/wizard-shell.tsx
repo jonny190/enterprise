@@ -11,7 +11,8 @@ const STEPS = [
   { number: 4, label: "User Stories" },
   { number: 5, label: "Non-Functional Reqs" },
   { number: 6, label: "Constraints" },
-  { number: 7, label: "Review & Finalize" },
+  { number: 7, label: "Process Flows" },
+  { number: 8, label: "Review & Finalize" },
 ];
 
 export function WizardShell({
@@ -41,7 +42,7 @@ export function WizardShell({
   async function completeAndNext(step: number) {
     const newCompleted = [...new Set([...completedSteps, step])].sort();
     setCompletedSteps(newCompleted);
-    const nextStep = Math.min(step + 1, 7);
+    const nextStep = Math.min(step + 1, 8);
     setCurrentStep(nextStep);
     await updateWizardState(projectId, {
       currentStep: nextStep,

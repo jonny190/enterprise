@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { Priority } from "@prisma/client";
+import { Priority, FlowType } from "@prisma/client";
 
 async function getProjectWithAuth(projectId: string) {
   const user = await requireSession();
@@ -237,6 +237,34 @@ export async function saveConstraints(
   return { success: true };
 }
 
+export async function saveProcessFlows(
+  projectId: string,
+  flows: { name: string; flowType: FlowType; diagramData: { nodes: unknown[]; edges: unknown[] } }[]
+) {
+  await getProjectWithAuth(projectId);
+
+  await prisma.processFlow.deleteMany({ where: { projectId } });
+
+  if (flows.length > 0) {
+    await prisma.$transaction(
+      flows.map((flow, index) =>
+        prisma.processFlow.create({
+          data: {
+            projectId,
+            name: flow.name,
+            flowType: flow.flowType,
+            diagramData: flow.diagramData,
+            sortOrder: index,
+          },
+        })
+      )
+    );
+  }
+
+  revalidatePath(`/project/${projectId}`);
+  return { success: true };
+}
+
 export async function updateWizardState(
   projectId: string,
   data: { currentStep: number; completedSteps: number[] }
@@ -267,8 +295,8 @@ export async function finalizeWizard(projectId: string) {
     prisma.projectWizardState.update({
       where: { projectId },
       data: {
-        currentStep: 7,
-        completedSteps: [1, 2, 3, 4, 5, 6, 7],
+        currentStep: 8,
+        completedSteps: [1, 2, 3, 4, 5, 6, 7, 8],
       },
     }),
     prisma.project.update({

@@ -29,6 +29,7 @@ export default async function WizardPage({
         },
         orderBy: { sortOrder: "asc" },
       },
+      processFlows: { orderBy: { sortOrder: "asc" } },
       wizardState: true,
     },
   });
@@ -80,6 +81,7 @@ export default async function WizardPage({
             priority: r.priority,
           })),
         }))}
+      processFlows={project.processFlows}
     />
   );
 }
