@@ -92,6 +92,9 @@ export async function POST(request: Request) {
     const raw = await generateStructuredJSON(prompt);
     const parsed = JSON.parse(raw);
     const nodes = parsed.nodes ?? [];
+    const nodeTypeMap = new Map(
+      nodes.map((n: { id: string; type: string }) => [n.id, n.type])
+    );
     const edges = (
       parsed.edges ?? []
     ).map(
@@ -100,15 +103,32 @@ export async function POST(request: Request) {
           id?: string;
           source: string;
           target: string;
+          sourceHandle?: string;
           label?: string;
         },
         i: number
-      ) => ({
-        id: e.id ?? `edge-${i}`,
-        source: e.source,
-        target: e.target,
-        label: e.label,
-      })
+      ) => {
+        const sourceType = nodeTypeMap.get(e.source);
+        let sourceHandle = e.sourceHandle;
+
+        // Map edge labels to decision node handles
+        if (sourceType === "decision" && !sourceHandle) {
+          const labelLower = (e.label ?? "").toLowerCase().trim();
+          if (labelLower === "yes" || labelLower === "true") {
+            sourceHandle = "yes";
+          } else if (labelLower === "no" || labelLower === "false") {
+            sourceHandle = "no";
+          }
+        }
+
+        return {
+          id: e.id ?? `edge-${i}`,
+          source: e.source,
+          target: e.target,
+          sourceHandle,
+          label: e.label,
+        };
+      }
     );
     const laidOutNodes = layoutNodes(nodes, edges);
     return NextResponse.json({ nodes: laidOutNodes, edges });

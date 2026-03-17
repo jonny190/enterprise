@@ -27,6 +27,7 @@ export function ProcessesClient({ projectId, flows }: ProcessesClientProps) {
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(
     flows[0]?.id ?? null
   );
+  const [canvasKey, setCanvasKey] = useState(0);
 
   const selectedFlow = flows.find((f) => f.id === selectedFlowId);
 
@@ -36,6 +37,7 @@ export function ProcessesClient({ projectId, flows }: ProcessesClientProps) {
   }) => {
     if (!selectedFlowId) return;
     await updateDiagramData(selectedFlowId, projectId, diagramData);
+    setCanvasKey((k) => k + 1);
     router.refresh();
   };
 
@@ -61,7 +63,7 @@ export function ProcessesClient({ projectId, flows }: ProcessesClientProps) {
             </div>
             <div className="flex-1">
               <FlowCanvasWithProvider
-                key={selectedFlow.id}
+                key={`${selectedFlow.id}-${canvasKey}`}
                 flowId={selectedFlow.id}
                 projectId={projectId}
                 initialNodes={selectedFlow.diagramData.nodes ?? []}
