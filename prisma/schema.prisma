@@ -24,6 +24,7 @@ model User {
   invitationsSent       OrgInvitation[] @relation("InvitedBy")
   projectsCreated       Project[]       @relation("CreatedBy")
   generatedOutputs      GeneratedOutput[]
+  revisionsCreated      Revision[] @relation("RevisionCreatedBy")
 }
 
 enum OrgRole {
@@ -110,6 +111,7 @@ model Project {
   wizardState ProjectWizardState?
   generatedOutputs GeneratedOutput[]
   processFlows ProcessFlow[]
+  revisions    Revision[]
 }
 
 model ProjectMeta {
@@ -210,6 +212,7 @@ enum OutputType {
   requirements_doc
   project_brief
   technical_spec
+  revision_changelog
 }
 
 model GeneratedOutput {
@@ -242,4 +245,59 @@ model ProcessFlow {
   updatedAt   DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+enum RevisionStatus {
+  draft
+  finalized
+}
+
+enum ChangeType {
+  added
+  modified
+  removed
+}
+
+enum TargetType {
+  objective
+  user_story
+  requirement
+  requirement_category
+  nfr_metric
+  process_flow
+  project_meta
+}
+
+model Revision {
+  id              String         @id @default(uuid())
+  projectId       String
+  revisionNumber  Int
+  title           String
+  description     String         @default("")
+  status          RevisionStatus @default(draft)
+  createdById     String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User             @relation("RevisionCreatedBy", fields: [createdById], references: [id])
+  changes   RevisionChange[]
+
+  @@unique([projectId, revisionNumber])
+}
+
+model RevisionChange {
+  id         String     @id @default(uuid())
+  revisionId String
+  changeType ChangeType
+  targetType TargetType
+  targetId   String?
+  data       Json       @default("{}")
+  sortOrder  Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+
+  @@index([revisionId])
 }
