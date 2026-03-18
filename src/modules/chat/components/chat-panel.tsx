@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Send, Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 type Message = {
   role: "user" | "assistant";
@@ -144,7 +145,13 @@ export function ChatPanel({ projectId }: { projectId: string }) {
                   : "border border-gray-800 bg-gray-900"
               }`}
             >
-              <pre className="text-sm whitespace-pre-wrap font-sans">{msg.content}</pre>
+              {msg.role === "assistant" ? (
+                <div className="text-sm prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-2">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+              )}
               {msg.role === "assistant" && !msg.content && streaming && (
                 <span className="text-gray-500 text-sm">Thinking...</span>
               )}
