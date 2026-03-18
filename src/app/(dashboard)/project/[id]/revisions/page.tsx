@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { RevisionsList } from "@/components/revisions/revisions-list";
+import { RevisionsList } from "@/modules/versions/components/revisions-list";
 
 export default async function RevisionsPage({
   params,

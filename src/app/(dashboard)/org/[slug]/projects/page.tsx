@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { ProjectSidebar } from "@/components/layout/project-sidebar";
-import { CreateProjectDialog } from "@/components/project/create-project-dialog";
+import { CreateProjectDialog } from "@/modules/projects/components/create-project-dialog";
 import Link from "next/link";
 
 export default async function OrgProjectsPage({

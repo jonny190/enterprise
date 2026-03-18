@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { buildFlowGenerationPrompt } from "@/lib/generation/prompts";
-import { generateStructuredJSON } from "@/lib/generation/generate";
+import { buildFlowGenerationPrompt } from "@/modules/generation/lib/prompts";
+import { generateStructuredJSON } from "@/modules/generation/lib/generate";
 import * as dagre from "dagre";
 
 function layoutNodes(

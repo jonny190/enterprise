@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { MetaEditor } from "@/components/requirements/meta-editor";
+import { MetaEditor } from "@/modules/requirements/components/meta-editor";
 
 export default async function MetaPage({
   params,

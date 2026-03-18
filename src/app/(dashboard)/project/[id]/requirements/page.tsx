@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { RequirementsTabs } from "@/components/requirements/requirements-tabs";
+import { RequirementsTabs } from "@/modules/requirements/components/requirements-tabs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 

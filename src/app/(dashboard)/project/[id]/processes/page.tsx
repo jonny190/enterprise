@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ProcessesClient } from "@/components/processes/processes-client";
+import { ProcessesClient } from "@/modules/processes/components/processes-client";
 
 export default async function ProcessesPage({
   params,

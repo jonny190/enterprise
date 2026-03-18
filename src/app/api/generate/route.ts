@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateOutput } from "@/lib/generation/generate";
-import { type VersionSnapshot } from "@/lib/revisions";
+import { generateOutput } from "@/modules/generation/lib/generate";
+import { type VersionSnapshot } from "@/modules/versions/lib";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {

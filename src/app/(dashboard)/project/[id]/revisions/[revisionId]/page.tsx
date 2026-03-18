@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { type VersionSnapshot } from "@/lib/revisions";
-import { VersionViewer } from "@/components/revisions/revision-editor";
+import { type VersionSnapshot } from "@/modules/versions/lib";
+import { VersionViewer } from "@/modules/versions/components/revision-editor";
 
 export default async function VersionViewPage({
   params,

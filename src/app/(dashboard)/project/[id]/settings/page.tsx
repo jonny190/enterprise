@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { ProjectSettingsClient } from "@/components/project/project-settings-client";
+import { ProjectSettingsClient } from "@/modules/projects/components/project-settings-client";
 
 export default async function ProjectSettingsPage({
   params,
