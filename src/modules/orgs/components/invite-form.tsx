@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { inviteMember } from "@/actions/orgs";
+import { inviteMember } from "@/modules/orgs/actions";
 import { OrgRole } from "@prisma/client";
 
 export function InviteForm({ orgId }: { orgId: string }) {

@@ -3,8 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { ProjectSidebar } from "@/components/layout/project-sidebar";
-import { MemberList } from "@/components/org/member-list";
-import { InviteForm } from "@/components/org/invite-form";
+import { MemberList } from "@/modules/orgs/components/member-list";
+import { InviteForm } from "@/modules/orgs/components/invite-form";
 
 export default async function OrgMembersPage({
   params,

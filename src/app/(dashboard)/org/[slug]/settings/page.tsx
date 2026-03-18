@@ -3,8 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import { ProjectSidebar } from "@/components/layout/project-sidebar";
-import { OrgSettingsForm } from "@/components/org/org-settings-form";
-import { BrandSettings } from "@/components/org/brand-settings";
+import { OrgSettingsForm } from "@/modules/orgs/components/org-settings-form";
+import { BrandSettings } from "@/modules/orgs/components/brand-settings";
 
 export default async function OrgSettingsPage({
   params,

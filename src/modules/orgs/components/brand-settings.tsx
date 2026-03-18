@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateOrgBrand } from "@/actions/orgs";
+import { updateOrgBrand } from "@/modules/orgs/actions";
 
 type BrandData = {
   website: string;

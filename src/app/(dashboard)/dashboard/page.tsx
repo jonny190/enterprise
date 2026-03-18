@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { CreateOrgForm } from "@/components/org/create-org-form";
+import { CreateOrgForm } from "@/modules/orgs/components/create-org-form";
 import Link from "next/link";
 
 export default async function DashboardPage({

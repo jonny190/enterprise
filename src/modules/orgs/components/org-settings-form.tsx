@@ -4,9 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createOrganization } from "@/actions/orgs";
+import { updateOrganization } from "@/modules/orgs/actions";
 
-export function CreateOrgForm() {
+export function OrgSettingsForm({
+  orgId,
+  orgName,
+}: {
+  orgId: string;
+  orgName: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,20 +23,20 @@ export function CreateOrgForm() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const result = await createOrganization({
+    const result = await updateOrganization(orgId, {
       name: formData.get("name") as string,
     });
 
     if (result.error) {
       setError(result.error);
-      setLoading(false);
     } else {
-      router.push(`/org/${result.slug}/projects`);
+      router.push(`/org/${result.slug}/settings`);
     }
+    setLoading(false);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
       {error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
           {error}
@@ -40,16 +46,10 @@ export function CreateOrgForm() {
         <label htmlFor="name" className="block text-sm font-medium">
           Organization name
         </label>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          required
-          placeholder="My Company"
-        />
+        <Input id="name" name="name" defaultValue={orgName} required />
       </div>
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? "Creating..." : "Create organization"}
+      <Button type="submit" disabled={loading}>
+        {loading ? "Saving..." : "Save changes"}
       </Button>
     </form>
   );

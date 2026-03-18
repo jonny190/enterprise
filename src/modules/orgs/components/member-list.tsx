@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { changeMemberRole, removeMember, revokeInvitation } from "@/actions/orgs";
+import { changeMemberRole, removeMember, revokeInvitation } from "@/modules/orgs/actions";
 import { OrgRole } from "@prisma/client";
 
 type Member = {
