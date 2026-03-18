@@ -217,6 +217,7 @@ enum OutputType {
   requirements_doc
   project_brief
   technical_spec
+  slide_deck
 }
 
 model GeneratedOutput {

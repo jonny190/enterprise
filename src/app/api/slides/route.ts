@@ -40,22 +40,20 @@ export async function POST(req: NextRequest) {
 
   const projectSummary = buildSummary(project);
 
-  const systemPrompt = `You are creating a presentation slide deck from project requirements. Return a JSON array of slide objects. Each slide has:
+  const systemPrompt = `You are creating a visually engaging presentation slide deck from project requirements. Return a JSON array of slide objects. Each slide has:
 - "title": string (short, punchy slide title)
 - "bullets": string[] (3-6 bullet points, concise)
 - "notes": string (optional speaker notes, 1-2 sentences)
+- "layout": one of "title", "bullets", "two-column", "highlight" (see below)
+- "vertical": boolean (optional, true to make this a vertical sub-slide of the previous horizontal slide - use for detail breakdowns under a topic)
 
-Create 8-12 slides covering:
-1. Title slide (project name + one-line description)
-2. Vision and context
-3. Target users
-4. Key objectives (split across slides if many)
-5. User stories highlights (grouped by priority)
-6. Non-functional requirements summary
-7. Constraints and dependencies
-8. Process flows overview (if any)
-9. Timeline
-10. Next steps / open questions
+Layout types:
+- "title": Large centered title with subtitle in bullets[0]. Use for opening and closing slides.
+- "bullets": Standard bullet list (default)
+- "two-column": Split layout. bullets[0..2] on left, bullets[3..5] on right. Good for comparisons or before/after.
+- "highlight": Single key metric or quote displayed large. bullets[0] is the highlight text, bullets[1] is the sub-text.
+
+Create 8-14 slides. Use vertical slides to group related content (e.g. objectives overview as horizontal, then detail slides as vertical beneath it). Use "highlight" for key stats. Use "two-column" for comparisons.
 
 Keep bullets concise - max 10 words each. Write for a stakeholder audience.
 Return ONLY the JSON array, no other text or markdown fences.`;
@@ -77,7 +75,23 @@ Return ONLY the JSON array, no other text or markdown fences.`;
     }
 
     const slides = JSON.parse(jsonMatch[0]);
-    return Response.json({ slides, projectName: project.name });
+
+    // Save to outputs
+    await prisma.generatedOutput.create({
+      data: {
+        projectId,
+        outputType: "slide_deck",
+        content: JSON.stringify(slides),
+        generatedById: session.user.id,
+      },
+    });
+
+    return Response.json({
+      slides,
+      projectName: project.name,
+      logoUrl: project.org.logoUrl || null,
+      brandColors: project.org.brandColors || null,
+    });
   } catch {
     return Response.json({ error: "Generation failed" }, { status: 500 });
   }

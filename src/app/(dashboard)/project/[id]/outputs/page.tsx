@@ -9,6 +9,7 @@ const TYPE_LABELS: Record<string, string> = {
   requirements_doc: "Requirements Document",
   project_brief: "Project Brief",
   technical_spec: "Technical Spec",
+  slide_deck: "Slide Deck",
 };
 
 export default async function OutputsPage({
