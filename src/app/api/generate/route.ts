@@ -134,12 +134,31 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Default: generate from baseline project data
+    // Default: generate from current (live) project data
+    // If changesOnly, diff against the latest version
+    let currentDiffContext: string | undefined;
+    if (changesOnly) {
+      const latestVersion = await prisma.revision.findFirst({
+        where: { projectId },
+        orderBy: { revisionNumber: "desc" },
+      });
+      if (latestVersion) {
+        const { snapshotProjectState } = await import("@/modules/versions/lib");
+        const currentSnap = await snapshotProjectState(projectId);
+        const prevSnap = latestVersion.snapshot as unknown as VersionSnapshot;
+        const diff = diffSnapshots(prevSnap, currentSnap);
+        const formatted = formatDiffForPrompt(diff, latestVersion.revisionNumber, latestVersion.revisionNumber + 1);
+        if (formatted) currentDiffContext = formatted;
+      }
+    }
+
     const stream = await generateOutput(outputType, {
       name: project.name,
       description: project.description,
       gitRepo: project.gitRepo || undefined,
       repoContext,
+      diffContext: currentDiffContext,
+      changesOnly: !!changesOnly && !!currentDiffContext,
       meta: project.meta || null,
       brand,
       objectives: project.objectives,
