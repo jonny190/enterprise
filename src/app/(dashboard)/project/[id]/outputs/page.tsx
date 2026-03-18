@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
-import { OutputItem } from "@/components/outputs/output-item";
+import { OutputItem } from "@/modules/outputs/components/output-item";
 
 const TYPE_LABELS: Record<string, string> = {
   ai_prompt: "AI Coding Prompt",
