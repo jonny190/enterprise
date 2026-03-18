@@ -11,6 +11,7 @@ const tabs = [
   { label: "Meta", href: "meta" },
   { label: "Processes", href: "processes" },
   { label: "Versions", href: "revisions" },
+  { label: "Scoring", href: "scoring" },
   { label: "Generate", href: "generate" },
   { label: "Outputs", href: "outputs" },
   { label: "Settings", href: "settings" },
