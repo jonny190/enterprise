@@ -25,6 +25,8 @@ model User {
   projectsCreated       Project[]       @relation("CreatedBy")
   generatedOutputs      GeneratedOutput[]
   revisionsCreated      Revision[] @relation("RevisionCreatedBy")
+  chatMessages          ChatMessage[]
+  scoringResults        ScoringResult[]
 }
 
 enum OrgRole {
@@ -112,7 +114,9 @@ model Project {
   wizardState ProjectWizardState?
   generatedOutputs GeneratedOutput[]
   processFlows ProcessFlow[]
-  revisions    Revision[]
+  revisions      Revision[]
+  chatMessages   ChatMessage[]
+  scoringResults ScoringResult[]
 }
 
 model ProjectMeta {
@@ -268,4 +272,33 @@ model Revision {
   createdBy User     @relation("RevisionCreatedBy", fields: [createdById], references: [id])
 
   @@unique([projectId, revisionNumber])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   // "user" or "assistant"
+  content   String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([projectId, userId])
+}
+
+model ScoringResult {
+  id               String   @id @default(uuid())
+  projectId        String
+  userId           String
+  overallScore     Int
+  structuralChecks Json     @default("[]")
+  aiInsights       Json     @default("[]")
+  createdAt        DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
 }

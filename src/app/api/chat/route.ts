@@ -6,13 +6,54 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
+// GET: Load chat history for the current user + project
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const projectId = req.nextUrl.searchParams.get("projectId");
+  if (!projectId) {
+    return Response.json({ error: "Missing projectId" }, { status: 400 });
+  }
+
+  const messages = await prisma.chatMessage.findMany({
+    where: { projectId, userId: session.user.id },
+    orderBy: { createdAt: "asc" },
+    select: { role: true, content: true, createdAt: true },
+  });
+
+  return Response.json({ messages });
+}
+
+// DELETE: Clear chat history for the current user + project
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const projectId = req.nextUrl.searchParams.get("projectId");
+  if (!projectId) {
+    return Response.json({ error: "Missing projectId" }, { status: 400 });
+  }
+
+  await prisma.chatMessage.deleteMany({
+    where: { projectId, userId: session.user.id },
+  });
+
+  return Response.json({ success: true });
+}
+
+// POST: Send a message, stream AI response, save both to DB
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { projectId, messages } = await req.json();
+  const { projectId, message } = await req.json();
 
   const project = await prisma.project.findUnique({
     where: { id: projectId, deletedAt: null },
@@ -40,6 +81,23 @@ export async function POST(req: NextRequest) {
     return new Response("Not found", { status: 404 });
   }
 
+  // Save the user message
+  await prisma.chatMessage.create({
+    data: {
+      projectId,
+      userId: session.user.id,
+      role: "user",
+      content: message,
+    },
+  });
+
+  // Load full conversation history from DB for context
+  const history = await prisma.chatMessage.findMany({
+    where: { projectId, userId: session.user.id },
+    orderBy: { createdAt: "asc" },
+    select: { role: true, content: true },
+  });
+
   const context = buildProjectContext(project);
 
   const systemPrompt = `You are a helpful requirements analyst assistant. You have access to the full project requirements below and can answer questions about them, identify gaps, suggest improvements, clarify relationships between requirements, and help the user understand their project.
@@ -52,13 +110,14 @@ ${context}`;
     model: "claude-sonnet-4-20250514",
     max_tokens: 4096,
     system: systemPrompt,
-    messages: messages.map((m: { role: string; content: string }) => ({
+    messages: history.map((m) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     })),
   });
 
   const encoder = new TextEncoder();
+  let fullResponse = "";
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -68,9 +127,21 @@ ${context}`;
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
+            fullResponse += event.delta.text;
             controller.enqueue(encoder.encode(event.delta.text));
           }
         }
+
+        // Save the assistant response to DB after streaming completes
+        await prisma.chatMessage.create({
+          data: {
+            projectId,
+            userId: session.user.id,
+            role: "assistant",
+            content: fullResponse,
+          },
+        });
+
         controller.close();
       } catch (error) {
         controller.error(error);

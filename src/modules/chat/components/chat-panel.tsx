@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 
 type Message = {
   role: "user" | "assistant";
@@ -21,8 +21,28 @@ export function ChatPanel({ projectId }: { projectId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/chat?projectId=${projectId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages.map((m: { role: string; content: string }) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })));
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,10 +62,7 @@ export function ChatPanel({ projectId }: { projectId: string }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          messages: newMessages,
-        }),
+        body: JSON.stringify({ projectId, message: question }),
       });
 
       if (!res.ok) throw new Error("Chat failed");
@@ -75,11 +92,21 @@ export function ChatPanel({ projectId }: { projectId: string }) {
     }
   }
 
+  async function handleClear() {
+    if (!confirm("Clear all chat history for this project?")) return;
+    await fetch(`/api/chat?projectId=${projectId}`, { method: "DELETE" });
+    setMessages([]);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  }
+
+  if (loading) {
+    return <p className="text-sm text-gray-400">Loading chat history...</p>;
   }
 
   return (
@@ -147,6 +174,18 @@ export function ChatPanel({ projectId }: { projectId: string }) {
           >
             <Send className="h-4 w-4" />
           </Button>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="px-3 text-gray-400"
+              onClick={handleClear}
+              disabled={streaming}
+              title="Clear history"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
