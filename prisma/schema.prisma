@@ -96,6 +96,7 @@ model Project {
   orgId       String
   name        String
   description String        @default("")
+  gitRepo     String        @default("")
   status      ProjectStatus @default(draft)
   deletedAt   DateTime?
   createdById String

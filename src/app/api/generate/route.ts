@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
       const stream = await generateOutput(outputType, {
         name: project.name,
         description: project.description,
+        gitRepo: snap.gitRepo,
         meta: snap.meta,
         brand,
         objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
@@ -109,6 +110,7 @@ export async function POST(req: NextRequest) {
     const stream = await generateOutput(outputType, {
       name: project.name,
       description: project.description,
+      gitRepo: project.gitRepo || undefined,
       meta: project.meta || null,
       brand,
       objectives: project.objectives,

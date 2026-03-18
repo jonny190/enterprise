@@ -31,6 +31,7 @@ export default async function ProjectSettingsPage({
         projectId={project.id}
         projectName={project.name}
         projectStatus={project.status}
+        gitRepo={project.gitRepo}
         orgSlug={project.org.slug}
         userRole={membership.role}
         isCreator={project.createdById === session.user.id}

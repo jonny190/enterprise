@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export type VersionSnapshot = {
+  gitRepo?: string;
   meta: {
     visionStatement: string;
     businessContext: string;
@@ -49,6 +50,7 @@ export async function snapshotProjectState(projectId: string): Promise<VersionSn
   });
 
   return {
+    gitRepo: project.gitRepo || undefined,
     meta: {
       visionStatement: project.meta?.visionStatement ?? "",
       businessContext: project.meta?.businessContext ?? "",

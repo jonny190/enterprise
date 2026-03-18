@@ -40,6 +40,23 @@ export async function createProject(
   }
 }
 
+export async function updateProjectGitRepo(projectId: string, gitRepo: string) {
+  const user = await requireSession();
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { id: projectId, deletedAt: null },
+    include: { org: true },
+  });
+  await requireOrgMembership(user.id, project.orgId);
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { gitRepo: gitRepo.trim() },
+  });
+
+  revalidatePath(`/project/${projectId}`);
+  return { success: true };
+}
+
 export async function archiveProject(projectId: string) {
   const user = await requireSession();
 

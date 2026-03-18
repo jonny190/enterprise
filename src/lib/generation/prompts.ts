@@ -59,6 +59,7 @@ Aimed at development teams planning implementation.`;
 export function buildUserPrompt(projectData: {
   name: string;
   description: string;
+  gitRepo?: string;
   meta: {
     businessContext: string;
     visionStatement: string;
@@ -107,6 +108,10 @@ export function buildUserPrompt(projectData: {
 
   if (projectData.description) {
     prompt += `${projectData.description}\n\n`;
+  }
+
+  if (projectData.gitRepo) {
+    prompt += `## Source Repository\n${projectData.gitRepo}\n\n`;
   }
 
   if (projectData.brand) {
