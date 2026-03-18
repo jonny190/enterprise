@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { label: "Wizard", href: "wizard" },
   { label: "Requirements", href: "requirements" },
+  { label: "Priorities", href: "priorities" },
   { label: "Meta", href: "meta" },
   { label: "Processes", href: "processes" },
   { label: "Versions", href: "revisions" },
