@@ -5,6 +5,7 @@ import { redirect, notFound } from "next/navigation";
 import { ProjectSidebar } from "@/components/layout/project-sidebar";
 import { OrgSettingsForm } from "@/modules/orgs/components/org-settings-form";
 import { BrandSettings } from "@/modules/orgs/components/brand-settings";
+import { GitHubTokenSettings } from "@/modules/orgs/components/github-token-settings";
 
 export default async function OrgSettingsPage({
   params,
@@ -71,6 +72,9 @@ export default async function OrgSettingsPage({
                 brandDescription: org.brandDescription,
               }}
             />
+          </div>
+          <div className="border-t border-gray-800 pt-8">
+            <GitHubTokenSettings orgId={org.id} hasToken={!!org.githubToken} />
           </div>
         </div>
       </div>

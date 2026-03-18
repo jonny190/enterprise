@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createErrorLog, updateErrorStatus, deleteErrorLog } from "../actions";
 import { type ErrorStatus } from "@prisma/client";
 import { toast } from "sonner";
-import { Plus, Bug, CheckCircle2, Search, X, Sparkles } from "lucide-react";
+import { Plus, Bug, CheckCircle2, Search, X, Sparkles, GitPullRequest, Code, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type ErrorItem = {
@@ -20,6 +20,7 @@ type ErrorItem = {
   status: ErrorStatus;
   aiAnalysis: string;
   suggestedFix: string;
+  prUrl: string;
   createdAt: string;
   createdBy: { name: string };
 };
@@ -34,14 +35,22 @@ const STATUS_STYLES: Record<ErrorStatus, { label: string; className: string }> =
 export function ErrorList({
   projectId,
   errors,
+  apiKey,
+  hasGithubToken,
+  hasGitRepo,
 }: {
   projectId: string;
   errors: ErrorItem[];
+  apiKey: string;
+  hasGithubToken: boolean;
+  hasGitRepo: boolean;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [creatingPr, setCreatingPr] = useState<string | null>(null);
+  const [showSnippet, setShowSnippet] = useState(false);
   const [filter, setFilter] = useState<ErrorStatus | "all">("all");
 
   const [title, setTitle] = useState("");
@@ -93,6 +102,25 @@ export function ErrorList({
       toast.error("Failed to analyze error");
     } finally {
       setAnalyzing(null);
+    }
+  }
+
+  async function handleCreatePR(errorId: string) {
+    setCreatingPr(errorId);
+    try {
+      const res = await fetch("/api/errors/create-pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ errorId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success("PR created");
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to create PR");
+    } finally {
+      setCreatingPr(null);
     }
   }
 
@@ -238,6 +266,38 @@ export function ErrorList({
                     <div className="rounded border border-blue-900/30 bg-blue-950/10 p-4 text-sm prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-headings:my-2">
                       <ReactMarkdown>{error.aiAnalysis}</ReactMarkdown>
                     </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      {error.prUrl ? (
+                        <a
+                          href={error.prUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 rounded-md border border-green-900/50 bg-green-950/20 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-950/40"
+                        >
+                          <GitPullRequest className="h-3.5 w-3.5" />
+                          View PR
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : hasGithubToken && hasGitRepo ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCreatePR(error.id)}
+                          disabled={creatingPr === error.id}
+                        >
+                          <GitPullRequest className="mr-2 h-4 w-4" />
+                          {creatingPr === error.id ? "Creating PR..." : "Create Fix PR"}
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAnalyze(error.id)}
+                        disabled={analyzing === error.id}
+                      >
+                        {analyzing === error.id ? "Re-analyzing..." : "Re-analyze"}
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button
@@ -282,6 +342,83 @@ export function ErrorList({
           </div>
         );
       })}
+
+      {/* Integration snippet */}
+      <div className="mt-8 border-t border-gray-800 pt-6">
+        <button
+          onClick={() => setShowSnippet(!showSnippet)}
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200"
+        >
+          <Code className="h-4 w-4" />
+          {showSnippet ? "Hide" : "Show"} integration snippet
+        </button>
+        {showSnippet && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-gray-400">
+              Send errors from your application using a simple POST request. Use the API key below to authenticate.
+            </p>
+            <div className="rounded bg-gray-950 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500">API Key</span>
+                <button
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                  onClick={() => { navigator.clipboard.writeText(apiKey); toast.success("API key copied"); }}
+                >
+                  Copy
+                </button>
+              </div>
+              <code className="text-xs text-gray-300 font-mono break-all">{apiKey}</code>
+            </div>
+            <div className="rounded bg-gray-950 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500">JavaScript / Node.js</span>
+                <button
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                  onClick={() => { navigator.clipboard.writeText(jsSnippet(apiKey)); toast.success("Snippet copied"); }}
+                >
+                  Copy
+                </button>
+              </div>
+              <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">{jsSnippet(apiKey)}</pre>
+            </div>
+            <div className="rounded bg-gray-950 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-gray-500">cURL</span>
+                <button
+                  className="text-xs text-blue-400 hover:text-blue-300"
+                  onClick={() => { navigator.clipboard.writeText(curlSnippet(apiKey)); toast.success("Snippet copied"); }}
+                >
+                  Copy
+                </button>
+              </div>
+              <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">{curlSnippet(apiKey)}</pre>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function jsSnippet(apiKey: string): string {
+  return `fetch("https://enterprise.coria.app/api/errors/ingest", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "${apiKey}"
+  },
+  body: JSON.stringify({
+    title: error.message,
+    stackTrace: error.stack,
+    context: "What the user was doing",
+    source: "browser"
+  })
+});`;
+}
+
+function curlSnippet(apiKey: string): string {
+  return `curl -X POST https://enterprise.coria.app/api/errors/ingest \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${apiKey}" \\
+  -d '{"title":"Error message","stackTrace":"...","source":"api"}'`;
 }

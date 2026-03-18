@@ -46,6 +46,7 @@ model Organization {
   brandColors     String   @default("")
   brandTone       String   @default("")
   brandDescription String  @default("")
+  githubToken     String   @default("")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -100,6 +101,7 @@ model Project {
   name        String
   description String        @default("")
   gitRepo     String        @default("")
+  apiKey      String        @default(uuid())
   status      ProjectStatus @default(draft)
   deletedAt   DateTime?
   createdById String
@@ -323,6 +325,7 @@ model ErrorLog {
   status      ErrorStatus @default(open)
   aiAnalysis  String      @default("")
   suggestedFix String     @default("")
+  prUrl       String      @default("")
   createdById String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

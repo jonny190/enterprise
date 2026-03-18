@@ -52,7 +52,7 @@ export async function createOrganization(data: { name: string }) {
 
 export async function updateOrganization(
   orgId: string,
-  data: { name: string }
+  data: { name?: string; githubToken?: string }
 ) {
   const user = await requireSession();
   const membership = await requireOrgMembership(user.id, orgId);
@@ -61,23 +61,32 @@ export async function updateOrganization(
     return { error: "Only owners can update organization settings" };
   }
 
-  const slug = generateSlug(data.name);
+  const updateData: Record<string, string> = {};
+  let slug: string | undefined;
 
-  const existing = await prisma.organization.findFirst({
-    where: { slug, NOT: { id: orgId } },
-  });
-
-  if (existing) {
-    return { error: "An organization with this name already exists" };
+  if (data.name) {
+    slug = generateSlug(data.name);
+    const existing = await prisma.organization.findFirst({
+      where: { slug, NOT: { id: orgId } },
+    });
+    if (existing) {
+      return { error: "An organization with this name already exists" };
+    }
+    updateData.name = data.name;
+    updateData.slug = slug;
   }
 
-  await prisma.organization.update({
+  if (data.githubToken !== undefined) {
+    updateData.githubToken = data.githubToken;
+  }
+
+  const org = await prisma.organization.update({
     where: { id: orgId },
-    data: { name: data.name, slug },
+    data: updateData,
   });
 
-  revalidatePath(`/org/${slug}`);
-  return { success: true, slug };
+  revalidatePath(`/org/${org.slug}`);
+  return { success: true, slug: org.slug };
 }
 
 export async function inviteMember(

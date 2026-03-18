@@ -30,6 +30,9 @@ export default async function ErrorsPage({
     <div className="p-8">
       <ErrorList
         projectId={id}
+        apiKey={project.apiKey}
+        hasGithubToken={!!project.org.githubToken}
+        hasGitRepo={!!project.gitRepo}
         errors={project.errorLogs.map((e) => ({
           ...e,
           createdAt: e.createdAt.toISOString(),
