@@ -359,6 +359,7 @@ model ErrorPR {
   errorLogId String
   url        String
   title      String   @default("")
+  type       String   @default("pr") // "pr" or "commit"
   addedById  String
   createdAt  DateTime @default(now())
 

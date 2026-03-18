@@ -85,7 +85,7 @@ export async function addErrorNote(
   return { success: true };
 }
 
-export async function addErrorPR(errorId: string, url: string, title: string) {
+export async function addErrorPR(errorId: string, url: string, title: string, type: "pr" | "commit" = "pr") {
   const user = await requireSession();
   const error = await prisma.errorLog.findUniqueOrThrow({
     where: { id: errorId },
@@ -94,7 +94,7 @@ export async function addErrorPR(errorId: string, url: string, title: string) {
   await requireOrgMembership(user.id, error.project.orgId);
 
   await prisma.errorPR.create({
-    data: { errorLogId: errorId, url, title, addedById: user.id },
+    data: { errorLogId: errorId, url, title, type, addedById: user.id },
   });
 
   revalidatePath(`/project/${error.projectId}/errors`);

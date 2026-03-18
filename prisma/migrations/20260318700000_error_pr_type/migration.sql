@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ErrorPR" ADD COLUMN "type" TEXT NOT NULL DEFAULT 'pr';

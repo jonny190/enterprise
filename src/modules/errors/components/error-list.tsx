@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createErrorLog, updateErrorStatus, deleteErrorLog, addErrorNote, addErrorPR } from "../actions";
 import { type ErrorStatus } from "@prisma/client";
 import { toast } from "sonner";
-import { Plus, Bug, CheckCircle2, Search, X, Sparkles, GitPullRequest, Code, ExternalLink } from "lucide-react";
+import { Plus, Bug, CheckCircle2, Search, X, Sparkles, GitPullRequest, GitCommit, Code, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 type ErrorNote = {
@@ -23,6 +23,7 @@ type ErrorPRItem = {
   id: string;
   url: string;
   title: string;
+  type: string;
   createdAt: string;
   addedBy: { name: string };
 };
@@ -332,7 +333,7 @@ export function ErrorList({
                 {/* Linked PRs */}
                 {(error.prs.length > 0 || error.prUrl) && (
                   <div>
-                    <h4 className="text-xs font-medium text-gray-400 mb-1">Linked Pull Requests</h4>
+                    <h4 className="text-xs font-medium text-gray-400 mb-1">Linked PRs & Commits</h4>
                     <div className="space-y-1">
                       {error.prUrl && (
                         <a href={error.prUrl} target="_blank" rel="noopener noreferrer"
@@ -342,8 +343,14 @@ export function ErrorList({
                       )}
                       {error.prs.map((pr) => (
                         <a key={pr.id} href={pr.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300">
-                          <GitPullRequest className="h-3 w-3" /> {pr.title || pr.url} <ExternalLink className="h-3 w-3" />
+                          className={`flex items-center gap-1.5 text-xs hover:opacity-80 ${
+                            pr.type === "commit" ? "text-purple-400" : "text-blue-400"
+                          }`}>
+                          {pr.type === "commit"
+                            ? <GitCommit className="h-3 w-3" />
+                            : <GitPullRequest className="h-3 w-3" />
+                          }
+                          {pr.title || pr.url} <ExternalLink className="h-3 w-3" />
                           <span className="text-gray-600">by {pr.addedBy.name}</span>
                         </a>
                       ))}
@@ -456,14 +463,16 @@ function AddPRForm({ errorId }: { errorId: string }) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
+  const [type, setType] = useState<"pr" | "commit">("pr");
   const [saving, setSaving] = useState(false);
 
   async function handleAdd() {
     if (!url.trim()) return;
     setSaving(true);
-    await addErrorPR(errorId, url.trim(), title.trim());
+    await addErrorPR(errorId, url.trim(), title.trim(), type);
     setUrl("");
     setTitle("");
+    setType("pr");
     setOpen(false);
     setSaving(false);
     router.refresh();
@@ -471,21 +480,52 @@ function AddPRForm({ errorId }: { errorId: string }) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
-      >
-        <Plus className="h-3 w-3" /> Link a PR
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={() => { setType("pr"); setOpen(true); }}
+          className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
+        >
+          <Plus className="h-3 w-3" /> Link a PR
+        </button>
+        <button
+          onClick={() => { setType("commit"); setOpen(true); }}
+          className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
+        >
+          <Plus className="h-3 w-3" /> Link a Commit
+        </button>
+      </div>
     );
   }
 
   return (
     <div className="rounded-md border border-gray-800 p-3 space-y-2">
-      <Input placeholder="PR URL (e.g. https://github.com/org/repo/pull/123)" value={url} onChange={(e) => setUrl(e.target.value)} className="text-xs" />
+      <div className="flex gap-1">
+        <button
+          onClick={() => setType("pr")}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${type === "pr" ? "bg-blue-500/20 text-blue-400" : "text-gray-500"}`}
+        >
+          Pull Request
+        </button>
+        <button
+          onClick={() => setType("commit")}
+          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${type === "commit" ? "bg-purple-500/20 text-purple-400" : "text-gray-500"}`}
+        >
+          Commit
+        </button>
+      </div>
+      <Input
+        placeholder={type === "pr"
+          ? "PR URL (e.g. https://github.com/org/repo/pull/123)"
+          : "Commit URL (e.g. https://github.com/org/repo/commit/abc123)"}
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        className="text-xs"
+      />
       <Input placeholder="Description (optional)" value={title} onChange={(e) => setTitle(e.target.value)} className="text-xs" />
       <div className="flex gap-2">
-        <Button size="sm" onClick={handleAdd} disabled={!url.trim() || saving}>{saving ? "Adding..." : "Link PR"}</Button>
+        <Button size="sm" onClick={handleAdd} disabled={!url.trim() || saving}>
+          {saving ? "Adding..." : `Link ${type === "pr" ? "PR" : "Commit"}`}
+        </Button>
         <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
       </div>
     </div>
