@@ -5,11 +5,27 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createErrorLog, updateErrorStatus, deleteErrorLog } from "../actions";
+import { createErrorLog, updateErrorStatus, deleteErrorLog, addErrorNote, addErrorPR } from "../actions";
 import { type ErrorStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { Plus, Bug, CheckCircle2, Search, X, Sparkles, GitPullRequest, Code, ExternalLink } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+
+type ErrorNote = {
+  id: string;
+  content: string;
+  type: string;
+  createdAt: string;
+  user: { name: string };
+};
+
+type ErrorPRItem = {
+  id: string;
+  url: string;
+  title: string;
+  createdAt: string;
+  addedBy: { name: string };
+};
 
 type ErrorItem = {
   id: string;
@@ -23,6 +39,8 @@ type ErrorItem = {
   prUrl: string;
   createdAt: string;
   createdBy: { name: string };
+  notes: ErrorNote[];
+  prs: ErrorPRItem[];
 };
 
 const STATUS_STYLES: Record<ErrorStatus, { label: string; className: string }> = {
@@ -311,6 +329,39 @@ export function ErrorList({
                   </Button>
                 )}
 
+                {/* Linked PRs */}
+                {(error.prs.length > 0 || error.prUrl) && (
+                  <div>
+                    <h4 className="text-xs font-medium text-gray-400 mb-1">Linked Pull Requests</h4>
+                    <div className="space-y-1">
+                      {error.prUrl && (
+                        <a href={error.prUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-green-400 hover:text-green-300">
+                          <GitPullRequest className="h-3 w-3" /> AI-generated fix PR <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      {error.prs.map((pr) => (
+                        <a key={pr.id} href={pr.url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300">
+                          <GitPullRequest className="h-3 w-3" /> {pr.title || pr.url} <ExternalLink className="h-3 w-3" />
+                          <span className="text-gray-600">by {pr.addedBy.name}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add PR form */}
+                <AddPRForm errorId={error.id} />
+
+                {/* Notes thread */}
+                <NotesThread errorId={error.id} notes={error.notes} />
+
+                {/* Resolve with note */}
+                {error.status !== "resolved" && (
+                  <ResolveForm errorId={error.id} />
+                )}
+
                 <div className="flex items-center gap-2 pt-2 border-t border-gray-800">
                   <span className="text-xs text-gray-500">Status:</span>
                   {(["open", "investigating", "resolved", "dismissed"] as ErrorStatus[]).map((s) => (
@@ -395,6 +446,144 @@ export function ErrorList({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AddPRForm({ errorId }: { errorId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleAdd() {
+    if (!url.trim()) return;
+    setSaving(true);
+    await addErrorPR(errorId, url.trim(), title.trim());
+    setUrl("");
+    setTitle("");
+    setOpen(false);
+    setSaving(false);
+    router.refresh();
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1"
+      >
+        <Plus className="h-3 w-3" /> Link a PR
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-gray-800 p-3 space-y-2">
+      <Input placeholder="PR URL (e.g. https://github.com/org/repo/pull/123)" value={url} onChange={(e) => setUrl(e.target.value)} className="text-xs" />
+      <Input placeholder="Description (optional)" value={title} onChange={(e) => setTitle(e.target.value)} className="text-xs" />
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleAdd} disabled={!url.trim() || saving}>{saving ? "Adding..." : "Link PR"}</Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+function NotesThread({ errorId, notes }: { errorId: string; notes: ErrorNote[] }) {
+  const router = useRouter();
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleAdd() {
+    if (!content.trim()) return;
+    setSaving(true);
+    await addErrorNote(errorId, content.trim(), "comment");
+    setContent("");
+    setSaving(false);
+    router.refresh();
+  }
+
+  return (
+    <div className="border-t border-gray-800 pt-3">
+      <h4 className="text-xs font-medium text-gray-400 mb-2">Notes ({notes.length})</h4>
+      {notes.length > 0 && (
+        <div className="space-y-2 mb-3">
+          {notes.map((note) => (
+            <div key={note.id} className={`rounded-md p-2.5 text-sm ${
+              note.type === "resolution"
+                ? "border border-green-900/30 bg-green-950/10"
+                : "border border-gray-800 bg-gray-900/50"
+            }`}>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-medium text-gray-300">{note.user.name}</span>
+                <span className="text-[10px] text-gray-600">{new Date(note.createdAt).toLocaleString()}</span>
+                {note.type === "resolution" && (
+                  <span className="rounded-full bg-green-500/20 text-green-400 px-1.5 py-0.5 text-[10px] font-medium">Resolution</span>
+                )}
+              </div>
+              <p className="text-xs text-gray-300 whitespace-pre-wrap">{note.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Textarea
+          placeholder="Add a note..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          rows={2}
+          className="text-xs"
+        />
+        <Button size="sm" onClick={handleAdd} disabled={!content.trim() || saving} className="shrink-0 self-end">
+          {saving ? "..." : "Add"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ResolveForm({ errorId }: { errorId: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleResolve() {
+    setSaving(true);
+    await addErrorNote(errorId, note.trim() || "Marked as resolved", "resolution");
+    setNote("");
+    setOpen(false);
+    setSaving(false);
+    router.refresh();
+  }
+
+  if (!open) {
+    return (
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <CheckCircle2 className="mr-2 h-4 w-4 text-green-400" />
+        Resolve with Note
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-green-900/30 bg-green-950/10 p-3 space-y-2">
+      <Textarea
+        placeholder="What fixed this? (optional)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        rows={2}
+        className="text-xs"
+      />
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleResolve} disabled={saving}>
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          {saving ? "Resolving..." : "Resolve"}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
       </div>
     </div>
   );

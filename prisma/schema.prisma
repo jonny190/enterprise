@@ -28,6 +28,8 @@ model User {
   chatMessages          ChatMessage[]
   scoringResults        ScoringResult[]
   errorsCreated         ErrorLog[] @relation("ErrorsCreated")
+  errorNotes            ErrorNote[] @relation("ErrorNotes")
+  errorPRs              ErrorPR[] @relation("ErrorPRs")
 }
 
 enum OrgRole {
@@ -330,8 +332,38 @@ model ErrorLog {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy User    @relation("ErrorsCreated", fields: [createdById], references: [id])
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User       @relation("ErrorsCreated", fields: [createdById], references: [id])
+  notes     ErrorNote[]
+  prs       ErrorPR[]
 
   @@index([projectId])
+}
+
+model ErrorNote {
+  id         String   @id @default(uuid())
+  errorLogId String
+  userId     String
+  content    String
+  type       String   @default("comment") // "comment", "resolution"
+  createdAt  DateTime @default(now())
+
+  errorLog ErrorLog @relation(fields: [errorLogId], references: [id], onDelete: Cascade)
+  user     User     @relation("ErrorNotes", fields: [userId], references: [id])
+
+  @@index([errorLogId])
+}
+
+model ErrorPR {
+  id         String   @id @default(uuid())
+  errorLogId String
+  url        String
+  title      String   @default("")
+  addedById  String
+  createdAt  DateTime @default(now())
+
+  errorLog ErrorLog @relation(fields: [errorLogId], references: [id], onDelete: Cascade)
+  addedBy  User     @relation("ErrorPRs", fields: [addedById], references: [id])
+
+  @@index([errorLogId])
 }

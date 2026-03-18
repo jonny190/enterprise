@@ -19,7 +19,17 @@ export default async function ErrorsPage({
       org: { include: { memberships: { where: { userId: session.user.id } } } },
       errorLogs: {
         orderBy: { createdAt: "desc" },
-        include: { createdBy: { select: { name: true } } },
+        include: {
+          createdBy: { select: { name: true } },
+          notes: {
+            orderBy: { createdAt: "asc" },
+            include: { user: { select: { name: true } } },
+          },
+          prs: {
+            orderBy: { createdAt: "asc" },
+            include: { addedBy: { select: { name: true } } },
+          },
+        },
       },
     },
   });
@@ -36,6 +46,8 @@ export default async function ErrorsPage({
         errors={project.errorLogs.map((e) => ({
           ...e,
           createdAt: e.createdAt.toISOString(),
+          notes: e.notes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString() })),
+          prs: e.prs.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() })),
         }))}
       />
     </div>

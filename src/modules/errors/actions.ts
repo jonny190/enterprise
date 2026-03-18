@@ -56,3 +56,47 @@ export async function deleteErrorLog(id: string) {
   revalidatePath(`/project/${error.projectId}/errors`);
   return { success: true };
 }
+
+export async function addErrorNote(
+  errorId: string,
+  content: string,
+  type: "comment" | "resolution" = "comment"
+) {
+  const user = await requireSession();
+  const error = await prisma.errorLog.findUniqueOrThrow({
+    where: { id: errorId },
+    include: { project: { include: { org: true } } },
+  });
+  await requireOrgMembership(user.id, error.project.orgId);
+
+  await prisma.errorNote.create({
+    data: { errorLogId: errorId, userId: user.id, content, type },
+  });
+
+  // If it's a resolution note, mark as resolved
+  if (type === "resolution") {
+    await prisma.errorLog.update({
+      where: { id: errorId },
+      data: { status: "resolved" },
+    });
+  }
+
+  revalidatePath(`/project/${error.projectId}/errors`);
+  return { success: true };
+}
+
+export async function addErrorPR(errorId: string, url: string, title: string) {
+  const user = await requireSession();
+  const error = await prisma.errorLog.findUniqueOrThrow({
+    where: { id: errorId },
+    include: { project: { include: { org: true } } },
+  });
+  await requireOrgMembership(user.id, error.project.orgId);
+
+  await prisma.errorPR.create({
+    data: { errorLogId: errorId, url, title, addedById: user.id },
+  });
+
+  revalidatePath(`/project/${error.projectId}/errors`);
+  return { success: true };
+}
