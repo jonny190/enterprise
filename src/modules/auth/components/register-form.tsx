@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { registerUser } from "@/actions/auth";
+import { registerUser } from "@/modules/auth/actions";
 
 export function RegisterForm() {
   const searchParams = useSearchParams();

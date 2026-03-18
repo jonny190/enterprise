@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { requestPasswordReset } from "@/actions/auth";
+import { requestPasswordReset } from "@/modules/auth/actions";
 
 export function ForgotPasswordForm() {
   const [success, setSuccess] = useState(false);

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { resetPassword } from "@/actions/auth";
+import { resetPassword } from "@/modules/auth/actions";
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();

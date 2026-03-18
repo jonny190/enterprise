@@ -1,4 +1,4 @@
-import { verifyEmail } from "@/actions/auth";
+import { verifyEmail } from "@/modules/auth/actions";
 import Link from "next/link";
 
 export default async function VerifyEmailPage({
