@@ -60,6 +60,7 @@ export function buildUserPrompt(projectData: {
   name: string;
   description: string;
   gitRepo?: string;
+  repoContext?: string;
   meta: {
     businessContext: string;
     visionStatement: string;
@@ -112,6 +113,10 @@ export function buildUserPrompt(projectData: {
 
   if (projectData.gitRepo) {
     prompt += `## Source Repository\n${projectData.gitRepo}\n\n`;
+  }
+
+  if (projectData.repoContext) {
+    prompt += projectData.repoContext;
   }
 
   if (projectData.brand) {

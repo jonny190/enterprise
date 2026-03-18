@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateOutput } from "@/modules/generation/lib/generate";
 import { type VersionSnapshot } from "@/modules/versions/lib";
+import { fetchRepoContext, formatRepoContext } from "@/modules/generation/lib/repo-context";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -50,6 +51,14 @@ export async function POST(req: NextRequest) {
           }
         : null;
 
+    // Fetch repo context if a git repo is linked
+    const repoUrl = project.gitRepo || undefined;
+    let repoContext: string | undefined;
+    if (repoUrl) {
+      const ctx = await fetchRepoContext(repoUrl);
+      if (ctx) repoContext = formatRepoContext(ctx);
+    }
+
     // If a version is selected, generate from the revision's snapshot
     if (revisionNumber) {
       const revision = await prisma.revision.findFirst({
@@ -66,6 +75,7 @@ export async function POST(req: NextRequest) {
         name: project.name,
         description: project.description,
         gitRepo: snap.gitRepo,
+        repoContext,
         meta: snap.meta,
         brand,
         objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
@@ -111,6 +121,7 @@ export async function POST(req: NextRequest) {
       name: project.name,
       description: project.description,
       gitRepo: project.gitRepo || undefined,
+      repoContext,
       meta: project.meta || null,
       brand,
       objectives: project.objectives,
