@@ -224,35 +224,9 @@ function UserStoriesTab({
         renderItem={(item) => {
           const story = stories.find((s) => s.id === item.id)!;
           return (
-            <EditableItem
-              title={`As a ${story.role}, I want ${story.capability}`}
-              subtitle={story.benefit ? `So that ${story.benefit}` : undefined}
-              onSave={async (data) => {
-                await updateUserStory(story.id, {
-                  role: data.role,
-                  capability: data.capability,
-                  benefit: data.benefit,
-                  priority: data.priority as Priority,
-                });
-              }}
-              onDelete={async () => {
-                await deleteUserStory(story.id);
-              }}
-              fields={[
-                { name: "role", label: "Role", value: story.role, type: "input" },
-                {
-                  name: "capability",
-                  label: "Capability",
-                  value: story.capability,
-                  type: "input",
-                },
-                {
-                  name: "benefit",
-                  label: "Benefit",
-                  value: story.benefit,
-                  type: "input",
-                },
-              ]}
+            <UserStoryCard
+              story={story}
+              onDelete={async () => { await deleteUserStory(story.id); }}
             />
           );
         }}
@@ -270,6 +244,105 @@ function UserStoriesTab({
       >
         Add User Story
       </Button>
+    </div>
+  );
+}
+
+function UserStoryCard({
+  story,
+  onDelete,
+}: {
+  story: { id: string; role: string; capability: string; benefit: string; priority: Priority };
+  onDelete: () => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [role, setRole] = useState(story.role);
+  const [capability, setCapability] = useState(story.capability);
+  const [benefit, setBenefit] = useState(story.benefit);
+  const [priority, setPriority] = useState<Priority>(story.priority);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSave() {
+    setLoading(true);
+    await updateUserStory(story.id, { role, capability, benefit, priority });
+    setLoading(false);
+    setEditing(false);
+  }
+
+  async function handleDelete() {
+    setLoading(true);
+    await onDelete();
+    setLoading(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="rounded-lg border border-gray-800 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400 shrink-0">As a</span>
+          <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="role" className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400 shrink-0">I want</span>
+          <Input value={capability} onChange={(e) => setCapability(e.target.value)} placeholder="capability" className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-400 shrink-0">So that</span>
+          <Input value={benefit} onChange={(e) => setBenefit(e.target.value)} placeholder="benefit" className="flex-1" />
+        </div>
+        <div>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            className="h-9 rounded-md border border-gray-700 bg-gray-800 px-3 text-sm"
+          >
+            <option value="must">Must have</option>
+            <option value="should">Should have</option>
+            <option value="could">Could have</option>
+            <option value="wont">Won&apos;t have</option>
+          </select>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave} disabled={loading}>
+            {loading ? "Saving..." : "Save"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-800 p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="space-y-1">
+            <p className="text-sm">
+              <span className="text-gray-400">As a </span>
+              <span className="font-medium">{story.role}</span>
+              <span className="text-gray-400">, I want </span>
+              <span className="font-medium">{story.capability}</span>
+            </p>
+            {story.benefit && (
+              <p className="text-sm">
+                <span className="text-gray-400">So that </span>
+                <span className="text-gray-300">{story.benefit}</span>
+              </p>
+            )}
+          </div>
+          <div className="mt-2">
+            <PriorityBadge priority={story.priority} />
+          </div>
+        </div>
+        <div className="flex gap-1 shrink-0">
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => setEditing(true)}>
+            Edit
+          </Button>
+          <Button variant="ghost" size="sm" className="text-xs text-red-400" onClick={handleDelete} disabled={loading}>
+            Delete
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
