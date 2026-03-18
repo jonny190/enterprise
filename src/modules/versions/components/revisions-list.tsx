@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Lock } from "lucide-react";
+import { Plus, Lock, ArrowLeftRight } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createVersion } from "@/modules/versions/actions";
@@ -42,10 +43,20 @@ export function RevisionsList({ projectId, revisions }: RevisionsListProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Versions</h1>
-        <Button onClick={() => setAdding(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Version
-        </Button>
+        <div className="flex gap-2">
+          {revisions.length >= 2 && (
+            <Link href={`/project/${projectId}/revisions/compare`}>
+              <Button variant="outline">
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Compare
+              </Button>
+            </Link>
+          )}
+          <Button onClick={() => setAdding(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Version
+          </Button>
+        </div>
       </div>
 
       {adding && (
