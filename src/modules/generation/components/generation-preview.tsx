@@ -77,6 +77,8 @@ export function GenerationPreview({ projectId, revisions }: Props) {
       outputType: outputType as OutputType,
       content,
       editedContent: isEditing ? editedContent : undefined,
+      revisionNumber,
+      changesOnly,
     });
     if (result.success) setSaved(true);
   }

@@ -227,13 +227,15 @@ enum OutputType {
 }
 
 model GeneratedOutput {
-  id            String     @id @default(uuid())
-  projectId     String
-  outputType    OutputType
-  content       String
-  editedContent String?
-  generatedAt   DateTime   @default(now())
-  generatedById String
+  id             String     @id @default(uuid())
+  projectId      String
+  outputType     OutputType
+  content        String
+  editedContent  String?
+  revisionNumber Int?
+  changesOnly    Boolean    @default(false)
+  generatedAt    DateTime   @default(now())
+  generatedById  String
 
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   generatedBy User    @relation(fields: [generatedById], references: [id])

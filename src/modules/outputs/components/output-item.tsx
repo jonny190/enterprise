@@ -40,6 +40,8 @@ export function OutputItem({
   generatedAt,
   generatedByName,
   outputType,
+  revisionNumber,
+  changesOnly,
 }: {
   id: string;
   content: string;
@@ -47,6 +49,8 @@ export function OutputItem({
   generatedAt: string;
   generatedByName: string;
   outputType: string;
+  revisionNumber?: number | null;
+  changesOnly?: boolean;
 }) {
   const displayContent = editedContent || content;
   const filename = `${outputType}-${new Date(generatedAt).toISOString().slice(0, 10)}`;
@@ -58,8 +62,22 @@ export function OutputItem({
           {new Date(generatedAt).toLocaleString()}
         </span>
         <span className="ml-2 text-gray-500">by {generatedByName}</span>
+        {revisionNumber ? (
+          <span className="ml-2 rounded bg-blue-900/50 px-1.5 py-0.5 text-xs text-blue-300 font-mono">
+            V{revisionNumber}
+          </span>
+        ) : (
+          <span className="ml-2 rounded bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
+            Current
+          </span>
+        )}
+        {changesOnly && (
+          <span className="ml-1 rounded bg-purple-900/50 px-1.5 py-0.5 text-xs text-purple-300">
+            changes only
+          </span>
+        )}
         {editedContent && (
-          <span className="ml-2 rounded bg-yellow-900/50 px-1.5 py-0.5 text-xs text-yellow-300">
+          <span className="ml-1 rounded bg-yellow-900/50 px-1.5 py-0.5 text-xs text-yellow-300">
             edited
           </span>
         )}

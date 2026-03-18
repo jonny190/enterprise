@@ -68,6 +68,8 @@ export default async function OutputsPage({
                     generatedAt={output.generatedAt.toISOString()}
                     generatedByName={output.generatedBy.name}
                     outputType={output.outputType}
+                    revisionNumber={output.revisionNumber}
+                    changesOnly={output.changesOnly}
                   />
                 ))}
               </div>

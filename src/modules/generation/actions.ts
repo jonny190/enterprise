@@ -11,6 +11,8 @@ export async function saveGeneratedOutput(
     outputType: OutputType;
     content: string;
     editedContent?: string;
+    revisionNumber?: number | null;
+    changesOnly?: boolean;
   }
 ) {
   const user = await requireSession();
@@ -25,6 +27,8 @@ export async function saveGeneratedOutput(
       outputType: data.outputType,
       content: data.content,
       editedContent: data.editedContent || null,
+      revisionNumber: data.revisionNumber ?? null,
+      changesOnly: data.changesOnly ?? false,
       generatedById: user.id,
     },
   });
