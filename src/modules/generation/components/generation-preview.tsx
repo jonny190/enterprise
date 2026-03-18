@@ -88,10 +88,14 @@ export function GenerationPreview({ projectId, revisions }: Props) {
       <RevisionSelector
         revisions={revisions ?? []}
         selected={revisionNumber}
-        onSelect={(n) => { setRevisionNumber(n); if (!n || n <= 1) setChangesOnly(false); }}
+        onSelect={(n) => { setRevisionNumber(n); if (n === 1) setChangesOnly(false); }}
       />
 
-      {revisionNumber && revisionNumber > 1 && (
+      {/* Show toggle when there's a previous version to diff against:
+          - "Current" (null) with any versions = diff against latest version
+          - V2+ = diff against previous version
+          - V1 = no toggle (nothing to diff against) */}
+      {((revisionNumber === null && (revisions ?? []).length > 0) || (revisionNumber && revisionNumber > 1)) && (
         <div className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/50 p-3">
           <button
             onClick={() => setChangesOnly(false)}
