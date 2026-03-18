@@ -14,6 +14,7 @@ const tabs = [
   { label: "Chat", href: "chat" },
   { label: "Scoring", href: "scoring" },
   { label: "Generate", href: "generate" },
+  { label: "Slides", href: "slides" },
   { label: "Outputs", href: "outputs" },
   { label: "Settings", href: "settings" },
 ];
