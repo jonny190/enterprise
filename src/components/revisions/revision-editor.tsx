@@ -1,58 +1,34 @@
 "use client";
 
-import { type ChangeType } from "@prisma/client";
-import { RevisionHeader } from "./revision-header";
-import { RevisionTabs } from "./revision-tabs";
-import { type ResolvedProjectState } from "@/lib/revisions";
+import { VersionHeader } from "./revision-header";
+import { VersionTabs } from "./revision-tabs";
+import { type VersionSnapshot } from "@/lib/revisions";
 
-type RevisionChange = {
-  id: string;
-  changeType: ChangeType;
-  targetType: string;
-  targetId: string | null;
-  data: Record<string, unknown>;
-};
-
-type RevisionEditorProps = {
-  revisionId: string;
+type VersionViewerProps = {
   projectId: string;
   revisionNumber: number;
   title: string;
-  status: string;
-  resolvedState: ResolvedProjectState;
-  changes: RevisionChange[];
+  createdAt: string;
+  snapshot: VersionSnapshot;
 };
 
-export function RevisionEditor({
-  revisionId,
-  projectId,
+export function VersionViewer({
+  projectId: _projectId,
   revisionNumber,
   title,
-  status,
-  resolvedState,
-  changes,
-}: RevisionEditorProps) {
-  const isDraft = status === "draft";
-
+  createdAt,
+  snapshot,
+}: VersionViewerProps) {
+  void _projectId;
   return (
     <div>
-      <RevisionHeader
-        revisionId={revisionId}
-        projectId={projectId}
-        title={title}
+      <VersionHeader
         revisionNumber={revisionNumber}
-        status={status}
-        changeCount={changes.length}
+        title={title}
+        createdAt={createdAt}
       />
       <div className="p-4">
-        <RevisionTabs
-          revisionId={revisionId}
-          projectId={projectId}
-          revisionNumber={revisionNumber}
-          resolvedState={resolvedState}
-          changes={changes}
-          isDraft={isDraft}
-        />
+        <VersionTabs snapshot={snapshot} />
       </div>
     </div>
   );

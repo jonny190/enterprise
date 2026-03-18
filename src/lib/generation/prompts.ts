@@ -51,9 +51,6 @@ Produce an architecture-oriented technical specification:
 
 Aimed at development teams planning implementation.`;
 
-    case "revision_changelog":
-      return base + "\nYou are generating a changelog document describing what changed in a project revision. List all additions, modifications, and removals clearly. Group changes by type (objectives, user stories, requirements, etc.). For modifications, describe what changed. Write in a clear, professional style suitable for a development team.";
-
     default:
       return base;
   }
@@ -208,41 +205,6 @@ export function buildUserPrompt(projectData: {
       });
       prompt += "\n";
     });
-  }
-
-  return prompt;
-}
-
-export function buildChangelogPrompt(
-  changes: { changeType: string; targetType: string; targetId: string | null; data: unknown }[],
-  revisionTitle: string,
-  revisionNumber: number
-): string {
-  let prompt = `# Revision ${revisionNumber}: ${revisionTitle}\n\n`;
-  prompt += `Generate a changelog document for this revision. Here are the changes:\n\n`;
-
-  const grouped = new Map<string, typeof changes>();
-  for (const change of changes) {
-    const group = grouped.get(change.targetType) ?? [];
-    group.push(change);
-    grouped.set(change.targetType, group);
-  }
-
-  for (const [targetType, typeChanges] of grouped) {
-    const label = targetType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    prompt += `## ${label} Changes\n\n`;
-    for (const change of typeChanges) {
-      const data = change.data as Record<string, unknown>;
-      prompt += `- **${change.changeType.toUpperCase()}**`;
-      if (change.changeType === "added") {
-        prompt += `: ${JSON.stringify(data)}\n`;
-      } else if (change.changeType === "modified" && change.targetId) {
-        prompt += ` (ID: ${change.targetId}): Changed fields: ${JSON.stringify(data)}\n`;
-      } else if (change.changeType === "removed" && change.targetId) {
-        prompt += ` (ID: ${change.targetId})\n`;
-      }
-    }
-    prompt += "\n";
   }
 
   return prompt;

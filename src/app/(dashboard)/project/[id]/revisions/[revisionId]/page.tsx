@@ -2,10 +2,10 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveProjectState } from "@/lib/revisions";
-import { RevisionEditor } from "@/components/revisions/revision-editor";
+import { type VersionSnapshot } from "@/lib/revisions";
+import { VersionViewer } from "@/components/revisions/revision-editor";
 
-export default async function RevisionEditorPage({
+export default async function VersionViewPage({
   params,
 }: {
   params: Promise<{ id: string; revisionId: string }>;
@@ -25,34 +25,19 @@ export default async function RevisionEditorPage({
 
   const revision = await prisma.revision.findUnique({
     where: { id: revisionId },
-    include: {
-      changes: { orderBy: { sortOrder: "asc" } },
-    },
   });
 
   if (!revision || revision.projectId !== id) redirect(`/project/${id}/revisions`);
 
-  const resolvedState = await resolveProjectState(
-    id,
-    revision.status === "finalized" ? revision.revisionNumber : revision.revisionNumber - 1,
-    revision.status === "draft" ? revision.id : null
-  );
+  const snapshot = revision.snapshot as unknown as VersionSnapshot;
 
   return (
-    <RevisionEditor
-      revisionId={revisionId}
+    <VersionViewer
       projectId={id}
       revisionNumber={revision.revisionNumber}
       title={revision.title}
-      status={revision.status}
-      resolvedState={resolvedState}
-      changes={revision.changes.map((c) => ({
-        id: c.id,
-        changeType: c.changeType,
-        targetType: c.targetType,
-        targetId: c.targetId,
-        data: c.data as Record<string, unknown>,
-      }))}
+      createdAt={revision.createdAt.toISOString()}
+      snapshot={snapshot}
     />
   );
 }

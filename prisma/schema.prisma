@@ -212,7 +212,6 @@ enum OutputType {
   requirements_doc
   project_brief
   technical_spec
-  revision_changelog
 }
 
 model GeneratedOutput {
@@ -252,22 +251,6 @@ enum RevisionStatus {
   finalized
 }
 
-enum ChangeType {
-  added
-  modified
-  removed
-}
-
-enum TargetType {
-  objective
-  user_story
-  requirement
-  requirement_category
-  nfr_metric
-  process_flow
-  project_meta
-}
-
 model Revision {
   id              String         @id @default(uuid())
   projectId       String
@@ -275,29 +258,13 @@ model Revision {
   title           String
   description     String         @default("")
   status          RevisionStatus @default(draft)
+  snapshot        Json           @default("{}")
   createdById     String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  project   Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdBy User             @relation("RevisionCreatedBy", fields: [createdById], references: [id])
-  changes   RevisionChange[]
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("RevisionCreatedBy", fields: [createdById], references: [id])
 
   @@unique([projectId, revisionNumber])
-}
-
-model RevisionChange {
-  id         String     @id @default(uuid())
-  revisionId String
-  changeType ChangeType
-  targetType TargetType
-  targetId   String?
-  data       Json       @default("{}")
-  sortOrder  Int        @default(0)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  revision Revision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
-
-  @@index([revisionId])
 }

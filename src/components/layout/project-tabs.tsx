@@ -9,7 +9,7 @@ const tabs = [
   { label: "Requirements", href: "requirements" },
   { label: "Meta", href: "meta" },
   { label: "Processes", href: "processes" },
-  { label: "Revisions", href: "revisions" },
+  { label: "Versions", href: "revisions" },
   { label: "Generate", href: "generate" },
   { label: "Outputs", href: "outputs" },
   { label: "Settings", href: "settings" },

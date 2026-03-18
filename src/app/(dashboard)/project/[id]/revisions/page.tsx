@@ -21,7 +21,6 @@ export default async function RevisionsPage({
         orderBy: { revisionNumber: "asc" },
         include: {
           createdBy: { select: { name: true } },
-          _count: { select: { changes: true } },
         },
       },
     },
