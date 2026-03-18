@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, AlertTriangle, XCircle, Lightbulb, AlertCircle, Sparkles } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Lightbulb, AlertCircle, Sparkles, History, ChevronDown, ChevronRight } from "lucide-react";
 
 type StructuralCheck = {
   section: string;
@@ -21,12 +21,38 @@ type ScoringResult = {
   overallScore: number;
   structuralChecks: StructuralCheck[];
   aiInsights: AIInsight[];
+  createdAt?: string;
+};
+
+type HistoryItem = {
+  id: string;
+  overallScore: number;
+  structuralChecks: StructuralCheck[];
+  aiInsights: AIInsight[];
+  createdAt: string;
+  user: { name: string };
 };
 
 export function ScoringPanel({ projectId }: { projectId: string }) {
   const [result, setResult] = useState<ScoringResult | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/scoring?projectId=${projectId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.results);
+      }
+    } catch { /* ignore */ }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   async function runAnalysis() {
     setLoading(true);
@@ -40,6 +66,7 @@ export function ScoringPanel({ projectId }: { projectId: string }) {
       if (!res.ok) throw new Error("Analysis failed");
       const data = await res.json();
       setResult(data);
+      loadHistory();
     } catch {
       setError("Failed to run analysis. Please try again.");
     } finally {
@@ -59,6 +86,11 @@ export function ScoringPanel({ projectId }: { projectId: string }) {
           <Sparkles className="mr-2 h-4 w-4" />
           {loading ? "Analyzing..." : "Run Analysis"}
         </Button>
+        <ScoringHistory
+          history={history}
+          expandedId={expandedHistory}
+          onToggle={(id) => setExpandedHistory(expandedHistory === id ? null : id)}
+        />
       </div>
     );
   }
@@ -135,6 +167,85 @@ export function ScoringPanel({ projectId }: { projectId: string }) {
           </div>
         </div>
       )}
+
+      <ScoringHistory
+        history={history}
+        expandedId={expandedHistory}
+        onToggle={(id) => setExpandedHistory(expandedHistory === id ? null : id)}
+      />
+    </div>
+  );
+}
+
+function ScoringHistory({
+  history,
+  expandedId,
+  onToggle,
+}: {
+  history: HistoryItem[];
+  expandedId: string | null;
+  onToggle: (id: string) => void;
+}) {
+  if (history.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h3 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+        <History className="h-4 w-4" />
+        Previous Results ({history.length})
+      </h3>
+      <div className="space-y-2">
+        {history.map((item) => (
+          <div key={item.id} className="rounded-md border border-gray-800">
+            <button
+              className="flex items-center justify-between w-full p-3 text-left"
+              onClick={() => onToggle(item.id)}
+            >
+              <div className="flex items-center gap-3">
+                {expandedId === item.id ? (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-500" />
+                )}
+                <span className={`text-sm font-semibold ${
+                  item.overallScore >= 75 ? "text-green-400" : item.overallScore >= 40 ? "text-amber-400" : "text-red-400"
+                }`}>
+                  {item.overallScore}%
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(item.createdAt).toLocaleString()} by {item.user.name}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">
+                {(item.aiInsights as AIInsight[]).length} insights
+              </span>
+            </button>
+            {expandedId === item.id && (
+              <div className="border-t border-gray-800 p-3 space-y-2">
+                {(item.structuralChecks as StructuralCheck[]).map((check) => (
+                  <div key={check.section} className="flex items-center gap-2 text-xs">
+                    <StatusIcon status={check.status} />
+                    <span className="text-gray-300">{check.section}</span>
+                    <span className="text-gray-500">- {check.detail}</span>
+                  </div>
+                ))}
+                {(item.aiInsights as AIInsight[]).length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-800">
+                    {(item.aiInsights as AIInsight[]).map((insight, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs mt-1">
+                        <span className={`shrink-0 ${severityText(insight.severity)}`}>
+                          [{insight.severity}]
+                        </span>
+                        <span className="text-gray-300">{insight.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
