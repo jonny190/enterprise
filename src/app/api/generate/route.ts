@@ -1,9 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateOutput, generateOutputFromPrompt } from "@/lib/generation/generate";
-import { buildSystemPrompt, buildChangelogPrompt } from "@/lib/generation/prompts";
-import { resolveProjectState } from "@/lib/revisions";
+import { generateOutput } from "@/lib/generation/generate";
 import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -51,54 +49,32 @@ export async function POST(req: NextRequest) {
           }
         : null;
 
-    // Handle revision_changelog type
-    if (outputType === "revision_changelog" && revisionNumber) {
+    // If a version is selected, generate from the revision's snapshot
+    if (revisionNumber) {
       const revision = await prisma.revision.findFirst({
         where: { projectId, revisionNumber },
-        include: { changes: { orderBy: { sortOrder: "asc" } } },
       });
 
       if (!revision) {
-        return new Response("Revision not found", { status: 404 });
+        return new Response("Version not found", { status: 404 });
       }
 
-      const changes = revision.changes.map((c) => ({
-        changeType: c.changeType,
-        targetType: c.targetType,
-        targetId: c.targetId,
-        data: c.data,
-      }));
-
-      const systemPrompt = buildSystemPrompt("revision_changelog");
-      const userPrompt = buildChangelogPrompt(changes, revision.title, revision.revisionNumber);
-
-      const stream = await generateOutputFromPrompt(systemPrompt, userPrompt);
-
-      return new Response(stream, {
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      });
-    }
-
-    // If a revision is selected (non-changelog), resolve state with revisions applied
-    if (revisionNumber) {
-      const resolved = await resolveProjectState(projectId, revisionNumber, null, true);
+      const snap = revision.snapshot as {
+        meta: Record<string, string>;
+        objectives: { title: string; successCriteria: string }[];
+        userStories: { role: string; capability: string; benefit: string; priority: string }[];
+        requirementCategories: { type: string; name: string; requirements: { title: string; description: string; priority: string; metrics: { metricName: string; targetValue: string; unit: string }[] }[] }[];
+        processFlows: { name: string; flowType: string; diagramData: unknown }[];
+      };
 
       const stream = await generateOutput(outputType, {
         name: project.name,
         description: project.description,
-        meta: resolved.meta,
+        meta: snap.meta,
         brand,
-        objectives: resolved.objectives.map((o) => ({
-          title: o.title,
-          successCriteria: o.successCriteria,
-        })),
-        userStories: resolved.userStories.map((s) => ({
-          role: s.role,
-          capability: s.capability,
-          benefit: s.benefit,
-          priority: s.priority,
-        })),
-        nfrCategories: resolved.requirementCategories
+        objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
+        userStories: snap.userStories.map((s) => ({ role: s.role, capability: s.capability, benefit: s.benefit, priority: s.priority })),
+        nfrCategories: snap.requirementCategories
           .filter((c) => c.type === "non_functional")
           .map((c) => ({
             name: c.name,
@@ -109,7 +85,7 @@ export async function POST(req: NextRequest) {
               metrics: r.metrics,
             })),
           })),
-        constraints: resolved.requirementCategories
+        constraints: snap.requirementCategories
           .filter((c) => c.type !== "non_functional")
           .map((c) => ({
             type: c.type,
@@ -119,7 +95,7 @@ export async function POST(req: NextRequest) {
               description: r.description,
             })),
           })),
-        processFlows: resolved.processFlows.map((f) => ({
+        processFlows: snap.processFlows.map((f) => ({
           name: f.name,
           flowType: f.flowType,
           diagramData: f.diagramData as {
