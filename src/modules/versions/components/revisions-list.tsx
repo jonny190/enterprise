@@ -52,16 +52,28 @@ export function RevisionsList({ projectId, revisions }: RevisionsListProps) {
         <div className="rounded-lg border border-blue-900/50 bg-blue-950/20 p-5">
           <h3 className="font-semibold mb-1">Get started with versioning</h3>
           <p className="text-sm text-gray-400 mb-3">
-            Build out your project requirements using the tabs above (Wizard, Requirements, Meta, etc.),
-            then come back here and create V1 to lock in that baseline.
+            Create V1 to snapshot your current project state as a baseline. You can build out requirements
+            first using the Wizard, or create V1 now and iterate from there.
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Link href={`/project/${projectId}/wizard`}>
               <Button variant="outline" size="sm">
                 <Pencil className="mr-2 h-4 w-4" />
                 Go to Wizard
               </Button>
             </Link>
+            <div className="h-6 w-px bg-gray-700 mx-1" />
+            <Input
+              placeholder="V1 title (e.g. Initial baseline)"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              className="w-64"
+            />
+            <Button size="sm" onClick={handleCreate} disabled={saving || !newTitle.trim()}>
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? "Creating..." : "Create V1"}
+            </Button>
           </div>
         </div>
       ) : (
