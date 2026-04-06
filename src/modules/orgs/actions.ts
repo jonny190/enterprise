@@ -141,15 +141,27 @@ export async function inviteMember(
     },
   });
 
-  await sendInvitationEmail(
-    data.email,
-    org.name,
-    inviter.name,
-    invitation.token
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "";
+  const inviteLink = `${appUrl}/register?invitation=${invitation.token}`;
+
+  const emailConfigured = !!(
+    process.env.AZURE_TENANT_ID &&
+    process.env.AZURE_CLIENT_ID &&
+    process.env.AZURE_CLIENT_SECRET &&
+    process.env.AZURE_SENDER_EMAIL
   );
 
+  if (emailConfigured) {
+    await sendInvitationEmail(
+      data.email,
+      org.name,
+      inviter.name,
+      invitation.token
+    );
+  }
+
   revalidatePath(`/org/${org.slug}/members`);
-  return { success: true };
+  return { success: true, inviteLink: emailConfigured ? undefined : inviteLink };
 }
 
 export async function acceptInvitation(token: string) {
