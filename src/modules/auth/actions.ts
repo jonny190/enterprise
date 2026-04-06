@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, generateToken, generateTokenExpiry } from "@/lib/auth-utils";
 import { sendVerificationEmail, sendPasswordResetEmail } from "@/lib/email";
 
+export async function isRegistrationOpen() {
+  const userCount = await prisma.user.count();
+  return userCount === 0;
+}
+
 export async function registerUser(data: {
   email: string;
   password: string;
@@ -16,6 +21,12 @@ export async function registerUser(data: {
   if (existing) return { error: "An account with this email already exists" };
   if (data.password.length < 8)
     return { error: "Password must be at least 8 characters" };
+
+  // After the first user, registration requires an invitation
+  const open = await isRegistrationOpen();
+  if (!open && !data.invitationToken) {
+    return { error: "Registration is by invitation only" };
+  }
 
   // Validate invitation if provided
   let invitationId: string | undefined;

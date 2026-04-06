@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { registerUser } from "@/modules/auth/actions";
 
-export function RegisterForm() {
+export function RegisterForm({ registrationOpen }: { registrationOpen: boolean }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const invitationToken = searchParams.get("invitation") || undefined;
@@ -44,6 +44,23 @@ export function RegisterForm() {
       <div className="rounded-md bg-green-50 p-4 text-center text-sm text-green-700">
         <p className="font-medium">Check your email</p>
         <p>We sent a verification link to your email address.</p>
+      </div>
+    );
+  }
+
+  if (!registrationOpen && !invitationToken) {
+    return (
+      <div className="space-y-4 text-center">
+        <div className="rounded-md bg-amber-50 p-4 text-sm text-amber-700">
+          <p className="font-medium">Registration is by invitation only</p>
+          <p className="mt-1">Ask an existing member to invite you to their organization.</p>
+        </div>
+        <p className="text-sm">
+          Already have an account?{" "}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
     );
   }
