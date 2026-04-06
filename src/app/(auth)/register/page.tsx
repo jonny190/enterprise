@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { RegisterForm } from "@/modules/auth/components/register-form";
+import { isRegistrationOpen } from "@/modules/auth/actions";
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const open = await isRegistrationOpen();
+
   return (
     <Suspense>
-      <RegisterForm />
+      <RegisterForm registrationOpen={open} />
     </Suspense>
   );
 }
