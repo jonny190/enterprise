@@ -74,7 +74,7 @@ export default async function OrgSettingsPage({
             />
           </div>
           <div className="border-t border-gray-800 pt-8">
-            <GitHubTokenSettings orgId={org.id} hasToken={!!org.githubToken} />
+            <GitHubTokenSettings orgId={org.id} hasToken={!!org.githubToken} repoVisibility={org.githubRepoVisibility} />
           </div>
         </div>
       </div>
