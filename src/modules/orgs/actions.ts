@@ -52,7 +52,7 @@ export async function createOrganization(data: { name: string }) {
 
 export async function updateOrganization(
   orgId: string,
-  data: { name?: string; githubToken?: string }
+  data: { name?: string; githubToken?: string; githubRepoVisibility?: string }
 ) {
   const user = await requireSession();
   const membership = await requireOrgMembership(user.id, orgId);
@@ -78,6 +78,10 @@ export async function updateOrganization(
 
   if (data.githubToken !== undefined) {
     updateData.githubToken = data.githubToken;
+  }
+
+  if (data.githubRepoVisibility !== undefined) {
+    updateData.githubRepoVisibility = data.githubRepoVisibility;
   }
 
   const org = await prisma.organization.update({

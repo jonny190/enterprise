@@ -9,12 +9,15 @@ import { toast } from "sonner";
 export function GitHubTokenSettings({
   orgId,
   hasToken,
+  repoVisibility,
 }: {
   orgId: string;
   hasToken: boolean;
+  repoVisibility: string;
 }) {
   const [token, setToken] = useState("");
   const [saving, setSaving] = useState(false);
+  const [visibility, setVisibility] = useState(repoVisibility);
 
   async function handleSave() {
     if (!token.trim()) return;
@@ -23,6 +26,12 @@ export function GitHubTokenSettings({
     setSaving(false);
     setToken("");
     toast.success("GitHub token saved");
+  }
+
+  async function handleVisibilityChange(value: string) {
+    setVisibility(value);
+    await updateOrganization(orgId, { githubRepoVisibility: value });
+    toast.success("Repository visibility updated");
   }
 
   async function handleClear() {
@@ -61,6 +70,37 @@ export function GitHubTokenSettings({
           <Button onClick={handleSave} disabled={!token.trim() || saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
+        </div>
+      )}
+      {hasToken && (
+        <div className="mt-4 border-t border-gray-800 pt-4">
+          <label className="block text-sm font-medium mb-2">
+            Default repository visibility
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleVisibilityChange("private")}
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                visibility === "private"
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-400 hover:bg-gray-800"
+              }`}
+            >
+              Private
+            </button>
+            <button
+              type="button"
+              onClick={() => handleVisibilityChange("public")}
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                visibility === "public"
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-400 hover:bg-gray-800"
+              }`}
+            >
+              Public
+            </button>
+          </div>
         </div>
       )}
     </div>

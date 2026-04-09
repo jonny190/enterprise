@@ -8,11 +8,12 @@ import {
   canDeleteProject,
 } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { createGithubRepo } from "@/modules/github/lib/create-repo";
 
 export async function createProject(
   orgId: string,
-  data: { name: string; description?: string }
-): Promise<{ success: true; projectId: string } | { error: string; success?: never; projectId?: never }> {
+  data: { name: string; description?: string; repoName?: string }
+): Promise<{ success: true; projectId: string; repoWarning?: string } | { error: string; success?: never; projectId?: never }> {
   try {
     const user = await requireSession();
     await requireOrgMembership(user.id, orgId);
@@ -32,8 +33,24 @@ export async function createProject(
       },
     });
 
+    let repoWarning: string | undefined;
+
+    if (data.repoName && org.githubToken) {
+      const isPrivate = org.githubRepoVisibility !== "public";
+      const result = await createGithubRepo(org.githubToken, data.repoName, isPrivate);
+
+      if ("url" in result) {
+        await prisma.project.update({
+          where: { id: project.id },
+          data: { gitRepo: result.url },
+        });
+      } else {
+        repoWarning = result.error;
+      }
+    }
+
     revalidatePath(`/org/${org.slug}/projects`);
-    return { success: true, projectId: project.id };
+    return { success: true, projectId: project.id, repoWarning };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to create project";
     return { error: message };
