@@ -115,30 +115,43 @@ Rules:
 export async function analyseDocument(
   document: ParsedDocument
 ): Promise<ImportedData> {
-  let text = document.text;
-
-  if (text.length > MAX_TEXT_LENGTH) {
-    text =
-      text.slice(0, MAX_TEXT_LENGTH) +
-      "\n\n[Document truncated due to length. Some content may not have been analysed.]";
-  }
-
-  if (text.trim().length < 50) {
-    throw new Error(
-      "Very little text could be extracted from this document. If this is a scanned PDF, please ensure it contains selectable text."
-    );
-  }
+  // Build the message content based on document type
+  const content: Anthropic.MessageCreateParams["messages"][0]["content"] =
+    document.pdfBuffer
+      ? [
+          {
+            type: "document" as const,
+            source: {
+              type: "base64" as const,
+              media_type: "application/pdf" as const,
+              data: document.pdfBuffer.toString("base64"),
+            },
+          },
+          {
+            type: "text" as const,
+            text: "Analyse this requirements document and extract the structured data.",
+          },
+        ]
+      : (() => {
+          let text = document.text;
+          if (text.length > MAX_TEXT_LENGTH) {
+            text =
+              text.slice(0, MAX_TEXT_LENGTH) +
+              "\n\n[Document truncated due to length. Some content may not have been analysed.]";
+          }
+          if (text.trim().length < 50) {
+            throw new Error(
+              "Very little text could be extracted from this document. Please check the file contains readable text."
+            );
+          }
+          return `Here is the requirements document to analyse:\n\n${text}`;
+        })();
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 16384,
     system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Here is the requirements document to analyse:\n\n${text}`,
-      },
-    ],
+    messages: [{ role: "user", content }],
   });
 
   const textBlock = response.content.find(
