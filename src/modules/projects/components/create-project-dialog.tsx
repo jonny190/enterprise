@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,11 +31,12 @@ export function CreateProjectDialog({
   const [repoName, setRepoName] = useState("");
   const [repoNameEdited, setRepoNameEdited] = useState(false);
 
-  useEffect(() => {
+  function handleProjectNameChange(value: string) {
+    setProjectName(value);
     if (!repoNameEdited && hasGithubToken) {
-      setRepoName(slugifyRepoName(projectName));
+      setRepoName(slugifyRepoName(value));
     }
-  }, [projectName, repoNameEdited, hasGithubToken]);
+  }
 
   function handleRepoNameChange(value: string) {
     setRepoName(slugifyRepoName(value));
@@ -88,7 +89,7 @@ export function CreateProjectDialog({
               name="name"
               required
               value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
+              onChange={(e) => handleProjectNameChange(e.target.value)}
             />
           </div>
           <div>
