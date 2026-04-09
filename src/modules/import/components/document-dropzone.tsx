@@ -58,10 +58,14 @@ export function DocumentDropzone({
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(
-            data.error || "Import failed. Please try again."
-          );
+          let message = "Import failed. Please try again.";
+          try {
+            const data = await response.json();
+            if (data.error) message = data.error;
+          } catch {
+            // Server returned non-JSON (e.g. HTML error page)
+          }
+          throw new Error(message);
         }
 
         const importedData: ImportedData = await response.json();

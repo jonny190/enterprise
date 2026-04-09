@@ -79,6 +79,11 @@ export async function generateStories(context: {
     throw new Error("AI generation returned no content.");
   }
 
-  const parsed = JSON.parse(textBlock.text) as { stories: GeneratedStory[] };
+  let jsonText = textBlock.text.trim();
+  if (jsonText.startsWith("```")) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  }
+
+  const parsed = JSON.parse(jsonText) as { stories: GeneratedStory[] };
   return parsed.stories;
 }

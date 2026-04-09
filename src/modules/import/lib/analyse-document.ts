@@ -149,6 +149,12 @@ export async function analyseDocument(
     throw new Error("AI analysis returned no content.");
   }
 
-  const parsed = JSON.parse(textBlock.text) as ImportedData;
+  // Strip markdown fences if Claude wrapped the JSON
+  let jsonText = textBlock.text.trim();
+  if (jsonText.startsWith("```")) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+  }
+
+  const parsed = JSON.parse(jsonText) as ImportedData;
   return parsed;
 }
