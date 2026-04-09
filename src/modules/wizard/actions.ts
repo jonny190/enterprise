@@ -26,6 +26,7 @@ export async function saveProjectMeta(
     timeline: string;
     glossary: string;
     technicalConstraints: string;
+    importNotes?: string;
   }
 ) {
   await getProjectWithAuth(projectId);
