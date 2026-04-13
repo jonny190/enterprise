@@ -57,6 +57,31 @@ const client = new Anthropic();
 
 const MAX_TEXT_LENGTH = 150000;
 
+async function callWithRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const isOverload =
+        error instanceof Anthropic.APIError &&
+        (error.status === 529 || error.status === 503);
+      if (!isOverload || attempt === maxAttempts) {
+        if (isOverload) {
+          throw new Error(
+            "The AI service is currently overloaded. Please try again in a moment."
+          );
+        }
+        throw error;
+      }
+      const delayMs = 1000 * Math.pow(2, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 const SYSTEM_PROMPT = `You are a requirements analyst. You will receive the text content of a technical requirements document. Extract the information into a structured JSON format.
 
 Return ONLY valid JSON with no markdown fences or additional text. Use this exact structure:
@@ -147,12 +172,14 @@ export async function analyseDocument(
           return `Here is the requirements document to analyse:\n\n${text}`;
         })();
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 16384,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content }],
-  });
+  const response = await callWithRetry(() =>
+    client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 16384,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content }],
+    })
+  );
 
   const textBlock = response.content.find(
     (c): c is TextBlock => c.type === "text"

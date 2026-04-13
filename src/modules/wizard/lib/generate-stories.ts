@@ -3,6 +3,31 @@ import { TextBlock } from "@anthropic-ai/sdk/resources/messages";
 
 const client = new Anthropic();
 
+async function callWithRetry<T>(fn: () => Promise<T>, maxAttempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const isOverload =
+        error instanceof Anthropic.APIError &&
+        (error.status === 529 || error.status === 503);
+      if (!isOverload || attempt === maxAttempts) {
+        if (isOverload) {
+          throw new Error(
+            "The AI service is currently overloaded. Please try again in a moment."
+          );
+        }
+        throw error;
+      }
+      const delayMs = 1000 * Math.pow(2, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 export type GeneratedStory = {
   role: string;
   capability: string;
@@ -64,12 +89,14 @@ export async function generateStories(context: {
     ? `Generate 10 user stories for this project:\n\n${parts.join("\n\n")}`
     : "Generate 10 user stories for a generic software project. Make them cover common functionality areas.";
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  const response = await callWithRetry(() =>
+    client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: "user", content: userPrompt }],
+    })
+  );
 
   const textBlock = response.content.find(
     (c): c is TextBlock => c.type === "text"
