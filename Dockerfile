@@ -24,11 +24,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Prisma CLI + schema + migrations so `prisma migrate deploy` works at startup
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package.json ./package.json
+# Isolated Prisma CLI installation with full transitive deps for runtime migrations.
+# Installing here (rather than copying node_modules/prisma) ensures deps like
+# valibot that Prisma's CLI requires at runtime are present.
+RUN mkdir -p /app/migrator && cd /app/migrator \
+    && npm init -y >/dev/null \
+    && npm install prisma@7.5.0 --no-save --no-audit --no-fund --loglevel=error
+COPY --from=builder /app/prisma /app/migrator/prisma
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

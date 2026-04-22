@@ -8,7 +8,7 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 echo "Running database migrations..."
-node node_modules/prisma/build/index.js migrate deploy
+node /app/migrator/node_modules/prisma/build/index.js migrate deploy --schema=/app/migrator/prisma/schema.prisma
 
 echo "Starting Next.js server..."
 exec node server.js
