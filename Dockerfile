@@ -31,6 +31,7 @@ RUN mkdir -p /app/migrator && cd /app/migrator \
     && npm init -y >/dev/null \
     && npm install prisma@7.5.0 --no-save --no-audit --no-fund --loglevel=error
 COPY --from=builder /app/prisma /app/migrator/prisma
+COPY --from=builder /app/prisma.config.ts /app/migrator/prisma.config.ts
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
