@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         gitRepo: snap.gitRepo,
         repoContext,
         diffContext,
-        changesOnly: !!changesOnly,
+        changesOnly: !!changesOnly && !!diffContext,
         meta: snap.meta,
         brand,
         objectives: snap.objectives.map((o) => ({ title: o.title, successCriteria: o.successCriteria })),
