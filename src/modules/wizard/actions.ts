@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { Priority, FlowType } from "@prisma/client";
+import { assertProjectEditable } from "@/lib/project-lock";
 
-async function getProjectWithAuth(projectId: string) {
+// Auth + membership only. Used by navigation/progress actions that should keep
+// working even when the project is locked for building.
+async function authProject(projectId: string) {
   const user = await requireSession();
 
   const project = await prisma.project.findUniqueOrThrow({
@@ -14,6 +17,13 @@ async function getProjectWithAuth(projectId: string) {
   });
 
   await requireOrgMembership(user.id, project.orgId);
+  return project;
+}
+
+// Auth + membership + lock guard. Used by every action that mutates the spec.
+async function getProjectWithAuth(projectId: string) {
+  const project = await authProject(projectId);
+  assertProjectEditable(project);
   return project;
 }
 
