@@ -8,9 +8,7 @@ import { API_SCOPES } from "@/lib/api-keys";
 import type { ApiKeyView } from "@/modules/api-keys/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Props {
   orgId: string;
@@ -37,7 +28,10 @@ interface Props {
 
 const ALL_PROJECTS = "__all__";
 
-function keyStatus(k: ApiKeyView): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+function keyStatus(k: ApiKeyView): {
+  label: string;
+  variant: "default" | "secondary" | "destructive" | "outline";
+} {
   if (k.revokedAt) return { label: "Revoked", variant: "destructive" };
   if (k.expiresAt && new Date(k.expiresAt).getTime() < Date.now())
     return { label: "Expired", variant: "secondary" };
@@ -118,8 +112,8 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">API Keys</h2>
-          <p className="text-muted-foreground text-sm">
+          <h3 className="text-lg font-semibold">API Keys</h3>
+          <p className="text-sm text-gray-400">
             Programmatic access for the agent fleet and integrations.
           </p>
         </div>
@@ -144,7 +138,7 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                       somewhere safe.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="bg-muted rounded-md p-3 font-mono text-sm break-all">
+                  <div className="rounded-md bg-gray-900 p-3 font-mono text-sm break-all">
                     {newToken}
                   </div>
                   <DialogFooter>
@@ -171,7 +165,9 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="key-name">Name</Label>
+                      <label htmlFor="key-name" className="block text-sm font-medium">
+                        Name
+                      </label>
                       <Input
                         id="key-name"
                         placeholder="Hermes fleet — production"
@@ -180,17 +176,18 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Scopes</Label>
+                      <span className="block text-sm font-medium">Scopes</span>
                       <div className="space-y-2">
                         {API_SCOPES.map((scope) => (
                           <label
                             key={scope}
                             className="flex items-center gap-2 text-sm"
                           >
-                            <Checkbox
+                            <input
+                              type="checkbox"
                               checked={scopes.includes(scope)}
-                              onCheckedChange={(c) =>
-                                toggleScope(scope, c === true)
+                              onChange={(e) =>
+                                toggleScope(scope, e.target.checked)
                               }
                             />
                             <span className="font-mono">{scope}</span>
@@ -199,27 +196,33 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Restrict to project (optional)</Label>
-                      <Select value={projectId} onValueChange={setProjectId}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={ALL_PROJECTS}>
-                            All projects in org
-                          </SelectItem>
-                          {projects.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <label
+                        htmlFor="key-project"
+                        className="block text-sm font-medium"
+                      >
+                        Restrict to project (optional)
+                      </label>
+                      <select
+                        id="key-project"
+                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                        value={projectId}
+                        onChange={(e) => setProjectId(e.target.value)}
+                      >
+                        <option value={ALL_PROJECTS}>All projects in org</option>
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="key-expiry">
+                      <label
+                        htmlFor="key-expiry"
+                        className="block text-sm font-medium"
+                      >
                         Expires in days (optional)
-                      </Label>
+                      </label>
                       <Input
                         id="key-expiry"
                         type="number"
@@ -246,11 +249,11 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
       </div>
 
       {apiKeys.length === 0 ? (
-        <p className="text-muted-foreground rounded-md border border-dashed p-6 text-center text-sm">
+        <p className="rounded-md border border-dashed border-gray-700 p-6 text-center text-sm text-gray-400">
           No API keys yet.
         </p>
       ) : (
-        <ul className="divide-y rounded-md border">
+        <ul className="divide-y divide-gray-800 rounded-md border border-gray-800">
           {apiKeys.map((k) => {
             const status = keyStatus(k);
             return (
@@ -263,7 +266,7 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                     <span className="font-medium">{k.name}</span>
                     <Badge variant={status.variant}>{status.label}</Badge>
                   </div>
-                  <div className="text-muted-foreground font-mono text-xs">
+                  <div className="font-mono text-xs text-gray-400">
                     {k.prefix}…
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -273,10 +276,12 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                       </Badge>
                     ))}
                     <Badge variant="secondary">
-                      {k.projectName ? `project: ${k.projectName}` : "all projects"}
+                      {k.projectName
+                        ? `project: ${k.projectName}`
+                        : "all projects"}
                     </Badge>
                   </div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-xs text-gray-400">
                     {k.lastUsedAt
                       ? `Last used ${new Date(k.lastUsedAt).toLocaleString()}`
                       : "Never used"}
