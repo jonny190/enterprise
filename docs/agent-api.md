@@ -63,13 +63,55 @@ projects in the org; project-scoped keys see only their project.
 }
 ```
 
+### `GET /api/v1/projects/:id` — scope: `read`
+
+Full requirements context for a single project: `meta`, `objectives`,
+`userStories`, `requirementCategories` (with nested `requirements` and
+`metrics`) and `processFlows`. Org-scoped keys can read any project in the org;
+project-scoped keys can only read their own project (others return `404`).
+
+```bash
+curl https://enterprise.coria.app/api/v1/projects/<project-id> \
+  -H "Authorization: Bearer ent_live_xxxxxxxx"
+```
+
+### `GET /api/v1/projects/:id/deployments` — scope: `read`
+
+Most recent deployments for a project (newest first). Optional `?limit=` (1–100,
+default 20).
+
+### `POST /api/v1/projects/:id/deployments` — scope: `deploy`
+
+Record a build/deploy event from the agent fleet. All fields are optional except
+that `status`, if given, must be one of: `pending`, `building`, `deploying`,
+`success`, `failed`, `cancelled` (defaults to `pending`).
+
+```bash
+curl -X POST https://enterprise.coria.app/api/v1/projects/<project-id>/deployments \
+  -H "Authorization: Bearer ent_live_xxxxxxxx" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "success",
+    "environment": "production",
+    "commitSha": "abc1234",
+    "commitMessage": "Add healthcheck endpoint",
+    "branch": "main",
+    "url": "https://app.example.com",
+    "logUrl": "https://coolify.example.com/deployments/123",
+    "source": "hermes-fleet"
+  }'
+```
+
+Returns the created deployment (HTTP `201`).
+
 ## Implementation notes
 
 - Key generation/hashing: `src/lib/api-keys.ts`
 - Request authentication + scope checks: `src/lib/api-auth.ts`
-  (`authenticateApiKey`, `requireScope`, `withApiAuth`)
+  (`authenticateApiKey`, `requireScope`, `requireProjectAccess`, `withApiAuth`)
 - Management actions/queries: `src/modules/api-keys/`
-- Data model: `ApiKey` in `prisma/schema.prisma`
+- Data models: `ApiKey`, `Deployment` in `prisma/schema.prisma`
+- Endpoints: `src/app/api/v1/`
 
 To protect a new route, wrap the handler:
 
