@@ -281,7 +281,8 @@ export async function updateWizardState(
   projectId: string,
   data: { currentStep: number; completedSteps: number[] }
 ) {
-  await getProjectWithAuth(projectId);
+  // Navigation/progress is allowed even while locked.
+  await authProject(projectId);
 
   await prisma.projectWizardState.upsert({
     where: { projectId },
