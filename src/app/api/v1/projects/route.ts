@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
         gitRepo: true,
         status: true,
         updatedAt: true,
+        lockedAt: true,
+        buildReadyRevisionId: true,
       },
       orderBy: { updatedAt: "desc" },
     });
@@ -33,8 +35,17 @@ export async function GET(req: NextRequest) {
       orgId: ctx.orgId,
       scopes: ctx.scopes,
       projects: projects.map((p) => ({
-        ...p,
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        gitRepo: p.gitRepo,
+        status: p.status,
         updatedAt: p.updatedAt.toISOString(),
+        // Build gating: the fleet should only build versions the user has
+        // marked ready. `readyToBuild` is true when the project is locked.
+        readyToBuild: p.lockedAt !== null,
+        lockedAt: p.lockedAt?.toISOString() ?? null,
+        buildReadyRevisionId: p.buildReadyRevisionId,
       })),
     });
   });

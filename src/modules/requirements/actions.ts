@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession, requireOrgMembership } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
 import { Priority, RequirementType } from "@prisma/client";
+import { assertProjectEditable } from "@/lib/project-lock";
 
 async function getProjectWithAuth(projectId: string) {
   const user = await requireSession();
@@ -14,6 +15,7 @@ async function getProjectWithAuth(projectId: string) {
   });
 
   await requireOrgMembership(user.id, project.orgId);
+  assertProjectEditable(project);
   return project;
 }
 

@@ -28,6 +28,25 @@ export default async function RevisionsPage({
 
   if (!project || project.org.memberships.length === 0) redirect("/dashboard");
 
+  const lockedBy = project.lockedById
+    ? await prisma.user.findUnique({
+        where: { id: project.lockedById },
+        select: { name: true },
+      })
+    : null;
+
+  const buildReadyRevision = project.buildReadyRevisionId
+    ? project.revisions.find((r) => r.id === project.buildReadyRevisionId)
+    : null;
+
+  const lock = project.lockedAt
+    ? {
+        lockedAt: project.lockedAt.toISOString(),
+        lockedByName: lockedBy?.name ?? "Unknown",
+        revisionNumber: buildReadyRevision?.revisionNumber ?? null,
+      }
+    : null;
+
   return (
     <div className="p-4">
       <RevisionsList
@@ -36,6 +55,7 @@ export default async function RevisionsPage({
           ...r,
           createdAt: r.createdAt.toISOString(),
         }))}
+        lock={lock}
       />
     </div>
   );

@@ -46,6 +46,11 @@ curl https://enterprise.coria.app/api/v1/projects \
 Returns the projects the key can access. Org-scoped keys see all non-deleted
 projects in the org; project-scoped keys see only their project.
 
+`readyToBuild` indicates the user has marked the current version ready to build
+and locked the spec. **The fleet should only build projects where
+`readyToBuild` is `true`**, building from the snapshot identified by
+`buildReadyRevisionId`.
+
 ```json
 {
   "orgId": "…",
@@ -57,7 +62,10 @@ projects in the org; project-scoped keys see only their project.
       "description": "",
       "gitRepo": "https://github.com/acme/portal",
       "status": "active",
-      "updatedAt": "2026-05-29T12:00:00.000Z"
+      "updatedAt": "2026-05-29T12:00:00.000Z",
+      "readyToBuild": true,
+      "lockedAt": "2026-05-29T12:30:00.000Z",
+      "buildReadyRevisionId": "…"
     }
   ]
 }

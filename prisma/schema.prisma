@@ -110,6 +110,9 @@ model Project {
   apiKey      String        @default(uuid())
   status      ProjectStatus @default(draft)
   deletedAt   DateTime?
+  lockedAt             DateTime?
+  lockedById           String?
+  buildReadyRevisionId String?
   createdById String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
