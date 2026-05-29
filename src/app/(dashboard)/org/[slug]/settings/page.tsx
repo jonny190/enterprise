@@ -6,6 +6,8 @@ import { ProjectSidebar } from "@/components/layout/project-sidebar";
 import { OrgSettingsForm } from "@/modules/orgs/components/org-settings-form";
 import { BrandSettings } from "@/modules/orgs/components/brand-settings";
 import { GitHubTokenSettings } from "@/modules/orgs/components/github-token-settings";
+import { ApiKeysSection } from "@/modules/api-keys/components/api-keys-section";
+import { getOrgApiKeys } from "@/modules/api-keys/queries";
 
 export default async function OrgSettingsPage({
   params,
@@ -31,6 +33,8 @@ export default async function OrgSettingsPage({
   if (!org || org.memberships.length === 0) notFound();
 
   const isOwner = org.memberships[0].role === "owner";
+
+  const apiKeys = isOwner ? await getOrgApiKeys(org.id) : [];
 
   if (!isOwner) {
     return (
@@ -75,6 +79,14 @@ export default async function OrgSettingsPage({
           </div>
           <div className="border-t border-gray-800 pt-8">
             <GitHubTokenSettings orgId={org.id} hasToken={!!org.githubToken} repoVisibility={org.githubRepoVisibility} githubOrgName={org.githubOrgName} />
+          </div>
+          <div className="border-t border-gray-800 pt-8">
+            <ApiKeysSection
+              orgId={org.id}
+              apiKeys={apiKeys}
+              projects={org.projects}
+              canManage={isOwner}
+            />
           </div>
         </div>
       </div>
