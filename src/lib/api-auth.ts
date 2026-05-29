@@ -81,6 +81,27 @@ export function requireScope(ctx: ApiAuthContext, scope: ApiScope): void {
 }
 
 /**
+ * Resolve a project the key is allowed to access, or throw 404. Enforces both
+ * org scoping and the optional single-project restriction on the key. Returns
+ * 404 (not 403) for projects outside the key's reach so existence isn't leaked.
+ */
+export async function requireProjectAccess(
+  ctx: ApiAuthContext,
+  projectId: string
+) {
+  if (ctx.projectId && ctx.projectId !== projectId) {
+    throw new ApiAuthError("Project not found", 404);
+  }
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, orgId: ctx.orgId, deletedAt: null },
+  });
+  if (!project) {
+    throw new ApiAuthError("Project not found", 404);
+  }
+  return project;
+}
+
+/**
  * Convenience wrapper: run an authenticated handler and convert any
  * {@link ApiAuthError} into a JSON error response.
  */
