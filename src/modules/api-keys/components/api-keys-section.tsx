@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface Props {
@@ -118,17 +117,16 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
           </p>
         </div>
         {canManage && (
-          <Dialog
-            open={open}
-            onOpenChange={(o) => {
-              setOpen(o);
-              if (!o) setNewToken(null);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button>Create key</Button>
-            </DialogTrigger>
-            <DialogContent>
+          <>
+            <Button onClick={() => setOpen(true)}>Create key</Button>
+            <Dialog
+              open={open}
+              onOpenChange={(o) => {
+                setOpen(o);
+                if (!o) setNewToken(null);
+              }}
+            >
+              <DialogContent>
               {newToken ? (
                 <>
                   <DialogHeader>
@@ -243,8 +241,9 @@ export function ApiKeysSection({ orgId, apiKeys, projects, canManage }: Props) {
                   </DialogFooter>
                 </>
               )}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </>
         )}
       </div>
 
