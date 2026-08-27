@@ -40,8 +40,11 @@ export async function generateOutput(
 
   const stream = await callWithRetry(async () =>
     client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      model: "claude-sonnet-5",
+      // Full requirements documents and technical specs were being truncated
+      // mid-sentence at 8192. This is a streaming call, so a higher ceiling
+      // carries no timeout risk and only bills for what is actually generated.
+      max_tokens: 32000,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     })
@@ -71,7 +74,7 @@ export async function generateOutput(
 export async function generateStructuredJSON(prompt: string): Promise<string> {
   const response = await callWithRetry(() =>
     client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 4096,
       system:
         "You are a business process analyst. Return only valid JSON with no markdown fences or additional text.",

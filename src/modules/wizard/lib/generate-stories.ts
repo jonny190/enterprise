@@ -91,7 +91,7 @@ export async function generateStories(context: {
 
   const response = await callWithRetry(() =>
     client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],

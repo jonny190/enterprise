@@ -174,7 +174,7 @@ export async function analyseDocument(
 
   const response = await callWithRetry(() =>
     client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 16384,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content }],

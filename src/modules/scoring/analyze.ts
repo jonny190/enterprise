@@ -139,7 +139,7 @@ Focus on the most impactful issues. Return 3-8 insights maximum. Return only the
 
   try {
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 2048,
       system: systemPrompt,
       messages: [{ role: "user", content: projectSummary }],
