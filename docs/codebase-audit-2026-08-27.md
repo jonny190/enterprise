@@ -76,6 +76,7 @@ For contrast, three genuinely dead things were deleted: `acceptInvitation`, supe
 - The `reveal.js` npm package is dynamically imported by the slide preview, so it is not unused. Its stylesheets were pinned to a different major than the installed package; the preview now matches. The exported deck loads all three files from the CDN at 5.1.0 and is internally consistent, so it was not touched.
 - `parseGitHubRepo`'s pattern stops the repository name at a dot. That is what strips `.git` from SSH URLs, and widening it would change which repositories resolve, quietly activating the error to PR path for projects where it currently no ops. It was deduplicated verbatim rather than improved.
 - The `shadcn` CLI in `dependencies` and the build time CSS plugins were both flagged and both rejected on review: the multi stage Dockerfile means they cost nothing in the runtime image.
+- `src/components/ui/badge.tsx` was deleted during this pass as genuinely unreferenced, and then restored when the branch was merged up: the API keys work that landed in the meantime imports it. The audit was right about the state of the tree at the time and still produced a deletion that had to be undone. Vendored shadcn primitives are cheap to keep and are exactly the kind of thing the next feature reaches for, so the rest of `src/components/ui/` was left in place regardless of current usage.
 
 ## Verification
 
