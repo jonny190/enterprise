@@ -172,47 +172,6 @@ export async function inviteMember(
   return { success: true, inviteLink: emailConfigured ? undefined : inviteLink };
 }
 
-export async function acceptInvitation(token: string) {
-  const user = await requireSession();
-
-  const invitation = await prisma.orgInvitation.findUnique({
-    where: { token },
-  });
-
-  if (!invitation || invitation.status !== "pending") {
-    return { error: "Invalid or expired invitation" };
-  }
-
-  if (invitation.expiresAt < new Date()) {
-    await prisma.orgInvitation.update({
-      where: { token },
-      data: { status: "expired" },
-    });
-    return { error: "This invitation has expired" };
-  }
-
-  if (invitation.email !== user.email) {
-    return { error: "This invitation was sent to a different email address" };
-  }
-
-  await prisma.$transaction([
-    prisma.orgMembership.create({
-      data: {
-        userId: user.id,
-        orgId: invitation.orgId,
-        role: invitation.role,
-      },
-    }),
-    prisma.orgInvitation.update({
-      where: { id: invitation.id },
-      data: { status: "accepted" },
-    }),
-  ]);
-
-  revalidatePath("/dashboard");
-  return { success: true };
-}
-
 export async function revokeInvitation(orgId: string, invitationId: string) {
   const user = await requireSession();
   const membership = await requireOrgMembership(user.id, orgId);
@@ -315,22 +274,4 @@ export async function updateOrgBrand(
   });
 
   return { success: true };
-}
-
-export async function getUserOrgs() {
-  const user = await requireSession();
-
-  return prisma.organization.findMany({
-    where: {
-      memberships: { some: { userId: user.id } },
-    },
-    include: {
-      memberships: {
-        where: { userId: user.id },
-        select: { role: true },
-      },
-      _count: { select: { projects: true } },
-    },
-    orderBy: { name: "asc" },
-  });
 }

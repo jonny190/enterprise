@@ -159,7 +159,8 @@ Focus on the most impactful issues. Return 3-8 insights maximum. Return only the
       (item: Record<string, unknown>) =>
         item.category && item.severity && item.section && item.message
     ) as AIInsight[];
-  } catch {
+  } catch (error) {
+    console.error("[scoring] AI analysis failed", error);
     return [];
   }
 }

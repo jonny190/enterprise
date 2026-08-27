@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { downloadText, downloadFromApi } from "@/lib/download";
 
 export function ExportButtons({
   content,
@@ -10,45 +11,16 @@ export function ExportButtons({
   projectName: string;
 }) {
   function downloadMarkdown() {
-    const blob = new Blob([content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${projectName}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(content, `${projectName}.md`, "text/markdown");
   }
 
   async function downloadWord() {
-    const res = await fetch("/api/export/word", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, filename: projectName }),
-    });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${projectName}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await downloadFromApi("/api/export/word", content, projectName, "docx");
   }
 
   async function downloadPdf() {
-    const res = await fetch("/api/export/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, filename: projectName }),
-    });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${projectName}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // /api/export/pdf returns a print-ready HTML document, not a PDF.
+    await downloadFromApi("/api/export/pdf", content, projectName, "html");
   }
 
   return (

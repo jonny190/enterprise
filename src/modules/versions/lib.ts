@@ -1,3 +1,4 @@
+import { parseGitHubRepo } from "@/modules/github/lib/parse-repo";
 import { prisma } from "@/lib/prisma";
 
 export type VersionSnapshot = {
@@ -32,11 +33,6 @@ export type VersionSnapshot = {
   processFlows: { id: string; name: string; flowType: string; diagramData: any }[];
 };
 
-function parseGitHubRepo(url: string): { owner: string; repo: string } | null {
-  const match = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
-}
 
 async function fetchLatestCommit(repoUrl: string): Promise<{
   sha: string;

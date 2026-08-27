@@ -41,7 +41,7 @@ export async function updateProcessFlow(
   data: { name?: string; description?: string; flowType?: FlowType }
 ) {
   await getProjectWithAuth(projectId);
-  await prisma.processFlow.update({ where: { id }, data });
+  await prisma.processFlow.update({ where: { id, projectId }, data });
   revalidatePath(`/project/${projectId}`);
   return { success: true };
 }
@@ -54,7 +54,7 @@ export async function updateDiagramData(
 ) {
   await getProjectWithAuth(projectId);
   await prisma.processFlow.update({
-    where: { id },
+    where: { id, projectId },
     data: { diagramData },
   });
   revalidatePath(`/project/${projectId}`);
@@ -63,7 +63,7 @@ export async function updateDiagramData(
 
 export async function deleteProcessFlow(id: string, projectId: string) {
   await getProjectWithAuth(projectId);
-  await prisma.processFlow.delete({ where: { id } });
+  await prisma.processFlow.delete({ where: { id, projectId } });
   revalidatePath(`/project/${projectId}`);
   return { success: true };
 }
@@ -76,7 +76,7 @@ export async function reorderProcessFlows(
   await prisma.$transaction(
     orderedIds.map((id, index) =>
       prisma.processFlow.update({
-        where: { id },
+        where: { id, projectId },
         data: { sortOrder: index },
       })
     )

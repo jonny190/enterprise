@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type OrgItem = {
@@ -11,8 +10,6 @@ type OrgItem = {
 };
 
 export function OrgRail({ orgs, currentSlug }: { orgs: OrgItem[]; currentSlug?: string }) {
-  const pathname = usePathname();
-
   return (
     <div className="flex h-full w-14 flex-col items-center gap-2 border-r bg-gray-950 py-3">
       <Link

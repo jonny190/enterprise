@@ -90,7 +90,8 @@ Please analyze this error and suggest a fix.`;
     });
 
     return Response.json({ analysis, suggestedFix });
-  } catch {
+  } catch (error) {
+    console.error("[errors] analysis failed", error);
     return Response.json({ error: "Analysis failed" }, { status: 500 });
   }
 }

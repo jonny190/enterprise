@@ -92,7 +92,8 @@ Return ONLY the JSON array, no other text or markdown fences.`;
       logoUrl: project.org.logoUrl || null,
       brandColors: project.org.brandColors || null,
     });
-  } catch {
+  } catch (error) {
+    console.error("[slides] generation failed", error);
     return Response.json({ error: "Generation failed" }, { status: 500 });
   }
 }

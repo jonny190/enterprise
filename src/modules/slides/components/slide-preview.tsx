@@ -34,12 +34,12 @@ export function SlidePreview({ slides, projectName, logoUrl, onClose }: SlidePre
   useEffect(() => {
     const link1 = document.createElement("link");
     link1.rel = "stylesheet";
-    link1.href = "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css";
+    link1.href = "https://cdn.jsdelivr.net/npm/reveal.js@6.0.0/dist/reveal.css";
     document.head.appendChild(link1);
 
     const link2 = document.createElement("link");
     link2.rel = "stylesheet";
-    link2.href = "https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css";
+    link2.href = "https://cdn.jsdelivr.net/npm/reveal.js@6.0.0/dist/theme/black.css";
     document.head.appendChild(link2);
 
     const style = document.createElement("style");

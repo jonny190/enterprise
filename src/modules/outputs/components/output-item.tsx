@@ -1,37 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-
-function download(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-async function downloadFromApi(
-  endpoint: string,
-  content: string,
-  filename: string,
-  ext: string
-) {
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, filename }),
-  });
-  if (!res.ok) return;
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${filename}.${ext}`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { downloadText, downloadFromApi } from "@/lib/download";
 
 export function OutputItem({
   id,
@@ -88,7 +58,7 @@ export function OutputItem({
             variant="outline"
             size="sm"
             onClick={() =>
-              download(displayContent, `${filename}.md`, "text/markdown")
+              downloadText(displayContent, `${filename}.md`, "text/markdown")
             }
           >
             .md
@@ -106,7 +76,7 @@ export function OutputItem({
             variant="outline"
             size="sm"
             onClick={() =>
-              downloadFromApi("/api/export/pdf", displayContent, filename, "pdf")
+              downloadFromApi("/api/export/pdf", displayContent, filename, "html")
             }
           >
             .pdf

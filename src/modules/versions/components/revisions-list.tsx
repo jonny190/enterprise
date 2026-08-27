@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Lock, ArrowLeftRight, Pencil, Save } from "lucide-react";
+import { Lock, ArrowLeftRight, Pencil, Save } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
