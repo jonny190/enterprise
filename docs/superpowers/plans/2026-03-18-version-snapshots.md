@@ -1,5 +1,10 @@
 # Version Snapshots Implementation Plan
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the granular change-tracking revision system with a version-snapshot model where V1 is the original project (locked), and users create V2, V3, etc. as full snapshots they can view and switch between.

@@ -1,5 +1,10 @@
 # Word/PDF Requirements Document Import
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 **Date:** 2026-03-26
 **Status:** Draft
 

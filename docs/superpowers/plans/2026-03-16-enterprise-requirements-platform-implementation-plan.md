@@ -1,5 +1,10 @@
 # Enterprise Requirements Platform - Detailed Implementation Plan
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 ## Planning Context
 
 This plan is based on the product specification in [2026-03-16-enterprise-requirements-platform-design.md](/mnt/d/enterprise/docs/superpowers/specs/2026-03-16-enterprise-requirements-platform-design.md). At the time of writing, this repository is greenfield and contains documentation only, so the plan assumes the application, infrastructure configuration, and delivery pipeline all need to be created from scratch.

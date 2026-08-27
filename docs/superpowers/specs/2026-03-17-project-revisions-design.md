@@ -1,5 +1,10 @@
 # Project Revisions - Design Specification
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 ## Overview
 
 Add the ability to create revisions against existing projects, capturing additions, modifications, and removals to requirements over time. Revisions form a linear chain where each builds on the previous, and the cumulative project state can be viewed at any point. A dedicated revision editor shows the current state with inline change controls. AI generation supports both full updated specs and changes-only documents.
