@@ -30,6 +30,7 @@ model User {
   errorsCreated         ErrorLog[] @relation("ErrorsCreated")
   errorNotes            ErrorNote[] @relation("ErrorNotes")
   errorPRs              ErrorPR[] @relation("ErrorPRs")
+  apiKeysCreated        ApiKey[] @relation("ApiKeysCreated")
 }
 
 enum OrgRole {
@@ -57,6 +58,7 @@ model Organization {
   memberships OrgMembership[]
   invitations OrgInvitation[]
   projects    Project[]
+  apiKeys     ApiKey[]
 }
 
 model OrgMembership {
@@ -108,6 +110,9 @@ model Project {
   apiKey      String        @default(uuid())
   status      ProjectStatus @default(draft)
   deletedAt   DateTime?
+  lockedAt             DateTime?
+  lockedById           String?
+  buildReadyRevisionId String?
   createdById String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -125,6 +130,8 @@ model Project {
   chatMessages   ChatMessage[]
   scoringResults ScoringResult[]
   errorLogs      ErrorLog[]
+  apiKeys        ApiKey[]
+  deployments    Deployment[]
 }
 
 model ProjectMeta {
@@ -372,4 +379,65 @@ model ErrorPR {
   addedBy  User     @relation("ErrorPRs", fields: [addedById], references: [id])
 
   @@index([errorLogId])
+}
+
+// Programmatic access keys for the agent fleet and external integrations.
+// Keys are org-scoped, with an optional restriction to a single project.
+// The plaintext key is shown to the user once at creation time; only a
+// SHA-256 hash is persisted. `scopes` controls what the key may do.
+model ApiKey {
+  id          String    @id @default(uuid())
+  orgId       String
+  projectId   String?
+  name        String
+  prefix      String
+  hashedKey   String    @unique
+  scopes      String[]  @default([])
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  project   Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User         @relation("ApiKeysCreated", fields: [createdById], references: [id])
+
+  @@index([orgId])
+  @@index([projectId])
+}
+
+enum DeploymentStatus {
+  pending
+  building
+  deploying
+  success
+  failed
+  cancelled
+}
+
+// Build/deploy events reported by the agent fleet (e.g. Hermes) via the
+// programmatic API. One row per deploy attempt; the fleet creates a row when a
+// build starts and updates status as it progresses.
+model Deployment {
+  id            String           @id @default(uuid())
+  projectId     String
+  status        DeploymentStatus @default(pending)
+  environment   String           @default("production")
+  commitSha     String           @default("")
+  commitMessage String           @default("")
+  branch        String           @default("")
+  url           String           @default("")
+  logUrl        String           @default("")
+  source        String           @default("")
+  message       String           @default("")
+  apiKeyId      String?
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
 }

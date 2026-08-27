@@ -142,6 +142,15 @@ export async function POST(req: NextRequest) {
     return new Response("Not found", { status: 404 });
   }
 
+  // Chat can add/modify the spec via tools, so block it while the project is
+  // locked for building.
+  if (project.lockedAt) {
+    return new Response(
+      "This version is marked ready to build and is locked. Unlock it (which starts a new version) before making changes.",
+      { status: 423 }
+    );
+  }
+
   // Save user message
   await prisma.chatMessage.create({
     data: { projectId, userId: session.user.id, role: "user", content: message },
