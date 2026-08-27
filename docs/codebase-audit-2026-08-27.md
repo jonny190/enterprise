@@ -33,7 +33,9 @@ Six findings involve schema changes. None were applied. Migrations run at contai
 
 The one worth doing soon:
 
-**`Project.apiKey` has no unique constraint and no index.** It is the sole credential for the public `/api/errors/ingest` endpoint and is resolved with `findFirst`, so every ingest call is a sequential scan of the projects table, and nothing at the database level prevents two projects sharing a key. Before adding a unique index, check for existing duplicates.
+**`Project.apiKey` has no unique constraint and no index.** It is the sole credential for the public `/api/errors/ingest` endpoint and is resolved with `findFirst`, so every ingest call is a sequential scan of the projects table, and nothing at the database level prevents two projects sharing a key. It is also stored in plain text. Before adding a unique index, check for existing duplicates.
+
+The `ApiKey` model added later for the agent API is the pattern to copy: it stores `hashedKey` with `@unique` and resolves it with `findUnique`. Bringing `Project.apiKey` in line means hashing it as well as indexing it, which is a migration plus a one time rotation of every existing project key, so it is a bigger job than the index alone. Worth scoping as its own piece of work rather than folding into an index migration.
 
 The others, in rough priority order:
 
