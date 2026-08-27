@@ -1,6 +1,18 @@
 # Enterprise Requirements Platform
 
-A multi-tenant web app for gathering project requirements and generating AI-assisted outputs (coding prompts, requirements docs, project briefs, technical specs). Built with Next.js 16, Prisma, PostgreSQL, and Claude.
+A multi-tenant web app for gathering project requirements and turning them into AI-assisted outputs. Built with Next.js 16, Prisma, PostgreSQL, and Claude.
+
+What it does:
+
+- A guided wizard that walks a project from vision through objectives, user stories, non-functional requirements and constraints
+- Generated documents: coding prompts, requirements docs, project briefs and technical specs
+- Process flow diagrams, editable on a canvas or generated from a description
+- Slide decks built from the project
+- Requirements scoring that flags gaps, vague wording and conflicts
+- A chat assistant that can add objectives, stories and requirements directly
+- Versioned revisions with side by side diffing
+- Word and PDF import to seed a project from an existing document
+- Error tracking, with AI analysis and one click pull requests against a linked GitHub repository
 
 ## Fork & Deploy (Coolify)
 
@@ -37,7 +49,13 @@ Copy [`.env.example`](.env.example) to `.env.local` for local dev, or set these 
 | `AZURE_CLIENT_SECRET` | Azure AD app registration secret |
 | `AZURE_SENDER_EMAIL` | Mailbox to send from (must exist in the tenant) |
 
-The Azure app needs `Mail.Send` permission with admin consent. Without these, registration and invite flows will throw.
+The Azure app needs `Mail.Send` permission with admin consent. Without these, the app still works: invitations show a copyable link in the UI instead of being emailed.
+
+### Optional
+
+| Variable | Purpose |
+|----------|---------|
+| `FIRECRAWL_API_KEY` | Brand lookup in organization settings. Without it, `/api/brand` returns a "not configured" error and you fill the brand fields in by hand. |
 
 ## Local Development
 
@@ -77,7 +95,7 @@ npm run lint               # ESLint
 - **Framework:** Next.js 16 App Router with Server Components and Server Actions
 - **Database:** PostgreSQL 16 + Prisma 7
 - **Auth:** NextAuth.js 4 (credentials provider, JWT sessions)
-- **AI:** Anthropic SDK streaming (Claude Sonnet 4)
+- **AI:** Anthropic SDK streaming (Claude Sonnet 5)
 - **Email:** Microsoft Graph API
 - **UI:** Tailwind CSS 4 + shadcn/ui + Lucide
 
@@ -89,7 +107,7 @@ Multi-tenant: data is scoped to organizations with owner/admin/member roles. See
 src/
   app/                      Next.js routes (auth + dashboard route groups)
   modules/                  Feature modules (projects, requirements, wizard, ...)
-  lib/                      Shared utilities (auth, permissions, email, generation)
+  lib/                      Shared utilities (auth, permissions, email, downloads)
   components/               Shared UI components
 prisma/
   schema.prisma             Database schema

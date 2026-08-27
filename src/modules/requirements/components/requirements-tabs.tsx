@@ -348,11 +348,9 @@ function UserStoryCard({
 }
 
 function CategorySection({
-  projectId,
   category,
   onCategoryDeleted,
 }: {
-  projectId: string;
   category: RequirementCategory;
   onCategoryDeleted: (id: string) => void;
 }) {
@@ -534,7 +532,6 @@ function NFRTab({
       {visible.map((cat) => (
         <CategorySection
           key={cat.id}
-          projectId={projectId}
           category={cat}
           onCategoryDeleted={(id) => setDeletedIds((prev) => [...prev, id])}
         />
@@ -603,7 +600,6 @@ function ConstraintsTab({
       {visible.map((cat) => (
         <CategorySection
           key={cat.id}
-          projectId={projectId}
           category={cat}
           onCategoryDeleted={(id) => setDeletedIds((prev) => [...prev, id])}
         />

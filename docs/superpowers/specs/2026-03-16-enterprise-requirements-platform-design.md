@@ -1,5 +1,10 @@
 # Enterprise Requirements Platform - Design Spec
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 ## Overview
 
 A web-based system for gathering high-level requirements and project scope, including non-functional requirements with measurable targets. The system supports multiple users and organizations with project sharing. Captured requirements can generate AI-structured prompts, requirements documents, project briefs, and technical specs.

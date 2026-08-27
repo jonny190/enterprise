@@ -1,3 +1,4 @@
+import { parseGitHubRepo } from "@/modules/github/lib/parse-repo";
 /**
  * Fetches repository context (file tree + README) from GitHub for use in AI generation prompts.
  */
@@ -8,11 +9,6 @@ type RepoContext = {
   defaultBranch: string;
 };
 
-function parseGitHubRepo(url: string): { owner: string; repo: string } | null {
-  const match = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
-}
 
 // Simple in-memory cache (survives within a single server process lifetime)
 const cache = new Map<string, { data: RepoContext; expires: number }>();

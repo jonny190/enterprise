@@ -65,7 +65,6 @@ export default async function ComparePage({
       ) : (
         <div className="space-y-6">
           <CompareSelector
-            projectId={id}
             versions={project.revisions.map((r) => ({
               number: r.revisionNumber,
               title: r.title,
@@ -88,12 +87,10 @@ export default async function ComparePage({
 }
 
 function CompareSelector({
-  projectId,
   versions,
   fromNum,
   toNum,
 }: {
-  projectId: string;
   versions: { number: number; title: string }[];
   fromNum: number | null;
   toNum: number | null;

@@ -1,5 +1,10 @@
 # Process Flow Designer - Design Specification
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 ## Overview
 
 Add the ability to describe and edit business processes as flowcharts within the Enterprise Requirements Platform. Users can document both current-state ("as-is") and future-state ("to-be") process flows using a visual editor powered by Xyflow (React Flow). The AI can generate initial flows from project context and the flows feed back into AI document generation as additional context.

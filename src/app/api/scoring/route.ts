@@ -21,6 +21,21 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: "Missing projectId" }, { status: 400 });
   }
 
+  // Confirm the caller is a member of the org that owns this project before
+  // returning any scoring history.
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      deletedAt: null,
+      org: { memberships: { some: { userId: session.user.id } } },
+    },
+    select: { id: true },
+  });
+
+  if (!project) {
+    return Response.json({ error: "Project not found" }, { status: 404 });
+  }
+
   const results = await prisma.scoringResult.findMany({
     where: { projectId },
     orderBy: { createdAt: "desc" },

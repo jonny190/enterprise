@@ -1,5 +1,10 @@
 # Process Flow Designer Implementation Plan
 
+> **Historical record.** This plan has already shipped. Do not implement it.
+> It predates the modular restructure, so the paths below are out of date
+> (`src/actions/` and `src/lib/generation/` are now `src/modules/`).
+> See [docs/superpowers/README.md](../README.md) for context.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add visual business process flowchart editing to the Enterprise Requirements Platform using @xyflow/react, integrated into both the wizard and a dedicated Processes tab, with AI generation and document generation context.

@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest } from "next/server";
+import { parseGitHubRepo } from "@/modules/github/lib/parse-repo";
 
 // POST: Create a GitHub PR with the suggested fix for an error
 export async function POST(req: NextRequest) {
@@ -166,8 +167,3 @@ Created automatically by [Enterprise Requirements Platform](${process.env.NEXT_P
   }
 }
 
-function parseGitHubRepo(url: string): { owner: string; repo: string } | null {
-  const match = url.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
-  if (!match) return null;
-  return { owner: match[1], repo: match[2] };
-}

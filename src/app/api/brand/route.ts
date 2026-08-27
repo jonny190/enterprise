@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { canManageOrgSettings } from "@/lib/permissions";
 import FirecrawlApp from "@mendable/firecrawl-js";
 import Anthropic from "@anthropic-ai/sdk";
+import { type TextBlock } from "@anthropic-ai/sdk/resources/messages";
+
+const anthropic = new Anthropic();
 
 function resolveUrl(base: string, path: string): string {
   try {
@@ -69,9 +72,8 @@ export async function POST(req: Request) {
 
     const pageContent = result.markdown.slice(0, 8000);
 
-    const anthropic = new Anthropic();
     const analysis = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 1024,
       messages: [
         {
@@ -96,8 +98,11 @@ ${pageContent}`,
       ],
     });
 
+    // Scan for the first text block rather than indexing content[0]: the first
+    // block is not guaranteed to be text.
     const text =
-      analysis.content[0].type === "text" ? analysis.content[0].text : "";
+      analysis.content.find((c): c is TextBlock => c.type === "text")?.text ??
+      "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return Response.json(

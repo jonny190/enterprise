@@ -186,48 +186,59 @@ ${context}`;
   let iterations = 0;
   const maxIterations = 5;
 
-  while (iterations < maxIterations) {
-    iterations++;
+  try {
+    while (iterations < maxIterations) {
+      iterations++;
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system: systemPrompt,
-      tools: TOOLS,
-      messages: currentMessages,
-    });
-
-    // Collect text blocks
-    const textBlocks = response.content.filter((b): b is TextBlock => b.type === "text");
-    const toolBlocks = response.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
-
-    if (textBlocks.length > 0) {
-      finalText += textBlocks.map((b) => b.text).join("");
-    }
-
-    // If no tool calls, we're done
-    if (toolBlocks.length === 0 || response.stop_reason !== "tool_use") {
-      break;
-    }
-
-    // Execute tool calls
-    const toolResults: ToolResultBlockParam[] = [];
-    for (const tool of toolBlocks) {
-      const result = await executeTool(tool.name, tool.input as Record<string, string>, projectId);
-      toolActions.push(result);
-      toolResults.push({
-        type: "tool_result",
-        tool_use_id: tool.id,
-        content: result,
+      const response = await client.messages.create({
+        model: "claude-sonnet-5",
+        max_tokens: 4096,
+        system: systemPrompt,
+        tools: TOOLS,
+        messages: currentMessages,
       });
-    }
 
-    // Add assistant response + tool results to conversation for next iteration
-    currentMessages = [
-      ...currentMessages,
-      { role: "assistant", content: response.content },
-      { role: "user", content: toolResults },
-    ];
+      // Collect text blocks
+      const textBlocks = response.content.filter((b): b is TextBlock => b.type === "text");
+      const toolBlocks = response.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
+
+      if (textBlocks.length > 0) {
+        finalText += textBlocks.map((b) => b.text).join("");
+      }
+
+      // If no tool calls, we're done
+      if (toolBlocks.length === 0 || response.stop_reason !== "tool_use") {
+        break;
+      }
+
+      // Execute tool calls
+      const toolResults: ToolResultBlockParam[] = [];
+      for (const tool of toolBlocks) {
+        const result = await executeTool(tool.name, tool.input as Record<string, string>, projectId);
+        toolActions.push(result);
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: tool.id,
+          content: result,
+        });
+      }
+
+      // Add assistant response + tool results to conversation for next iteration
+      currentMessages = [
+        ...currentMessages,
+        { role: "assistant", content: response.content },
+        { role: "user", content: toolResults },
+      ];
+    }
+  } catch (error) {
+    // Without this the whole route rejects: the user's message is already
+    // persisted, so the failure would surface as an unlogged 500 and leave a
+    // message in the history with no reply.
+    console.error("[chat] completion failed", error);
+    return Response.json(
+      { error: "The assistant is unavailable right now. Please try again." },
+      { status: 500 }
+    );
   }
 
   // Build the response text including tool action confirmations

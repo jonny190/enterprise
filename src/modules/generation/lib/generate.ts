@@ -40,42 +40,11 @@ export async function generateOutput(
 
   const stream = await callWithRetry(async () =>
     client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
-    })
-  );
-
-  const encoder = new TextEncoder();
-
-  return new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const event of stream) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
-        }
-        controller.close();
-      } catch (error) {
-        controller.error(error);
-      }
-    },
-  });
-}
-
-export async function generateOutputFromPrompt(
-  systemPrompt: string,
-  userPrompt: string
-): Promise<ReadableStream<Uint8Array>> {
-  const stream = await callWithRetry(async () =>
-    client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      model: "claude-sonnet-5",
+      // Full requirements documents and technical specs were being truncated
+      // mid-sentence at 8192. This is a streaming call, so a higher ceiling
+      // carries no timeout risk and only bills for what is actually generated.
+      max_tokens: 32000,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     })
@@ -105,7 +74,7 @@ export async function generateOutputFromPrompt(
 export async function generateStructuredJSON(prompt: string): Promise<string> {
   const response = await callWithRetry(() =>
     client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-5",
       max_tokens: 4096,
       system:
         "You are a business process analyst. Return only valid JSON with no markdown fences or additional text.",

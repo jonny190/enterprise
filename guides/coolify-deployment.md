@@ -68,6 +68,14 @@ Go to the **Environment Variables** section and add all of the following:
 | `AZURE_CLIENT_SECRET` | Azure AD app client secret |
 | `AZURE_SENDER_EMAIL` | The email address to send from |
 
+If you leave the Azure variables unset the app still runs. New registrations are auto-verified, and invitations show a copyable link in the UI instead of being emailed.
+
+### Optional
+
+| Variable | Description |
+|----------|-------------|
+| `FIRECRAWL_API_KEY` | Enables the brand lookup in organization settings, which scrapes a company site to fill in colours, tone and logo. Without it that button returns a "not configured" error and the fields are filled in by hand. |
+
 **Important:** Set `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to `http://` (not `https://`). Cloudflare's tunnel handles HTTPS termination before traffic reaches Coolify, so the app itself runs on plain HTTP.
 
 Mark sensitive values (secrets, API keys, passwords) as **Secret** so they are masked in the Coolify UI.
@@ -160,7 +168,9 @@ To deploy a new version:
 1. Push your changes to the `master` branch
 2. If auto-deploy is on, Coolify picks it up automatically
 3. Otherwise, click **Deploy** in the Coolify dashboard
-4. Prisma migrations run automatically during build, so schema changes are applied on each deploy
+4. Prisma migrations run automatically when the new container starts, so schema changes are applied on each deploy
+
+Because migrations run at container start under `set -e`, a migration that fails will stop the container from starting and Coolify will restart-loop it. The previous version stays up until the new container is healthy, so a failed migration shows up as a deploy that never completes rather than as downtime. Check the runtime logs, not the build logs, when a deploy hangs.
 
 ## Database Backups
 

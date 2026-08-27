@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Download, Presentation } from "lucide-react";
 import { SlidePreview } from "./slide-preview";
 import { toast } from "sonner";
+import { downloadText } from "@/lib/download";
 
 type Slide = {
   title: string;
@@ -47,13 +48,11 @@ export function SlideDeck({ projectId }: { projectId: string }) {
   function exportHTML() {
     if (!slides) return;
     const html = buildRevealHTML(slides, projectName, logoUrl);
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${projectName.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}-deck.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadText(
+      html,
+      `${projectName.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()}-deck.html`,
+      "text/html"
+    );
   }
 
   if (!slides) {
